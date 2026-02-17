@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_userController.text.isEmpty || _passController.text.isEmpty) {
-      _showSnackBar("Please fill in all fields", Colors.red.shade600);
+      _showSnackBar('Please fill in all fields', Colors.red.shade600);
       return;
     }
 
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       if (mounted) {
-        _showSnackBar("Invalid Credentials", Colors.red.shade600);
+        _showSnackBar('Invalid Credentials', Colors.red.shade600);
       }
     }
   }
@@ -89,14 +89,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleForgotPassword() {
     _showSnackBar(
-      "Password reset link will be sent to your registered email",
+      'Password reset link will be sent to your registered email',
       Colors.blue.shade600,
     );
   }
 
   void _handleRegister() {
     _showSnackBar(
-      "Registration feature coming soon!",
+      'Registration feature coming soon!',
       Colors.indigo.shade600,
     );
   }
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // App Title
                 const Text(
-                  "Department Nuclei",
+                  'Department Nuclei',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  "Secure Login Portal",
+                  'Secure Login Portal',
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 14,
@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _userController,
                   decoration: InputDecoration(
-                    labelText: "Username / Regd. No.",
+                    labelText: 'Username / Regd. No.',
                     labelStyle: TextStyle(color: Colors.grey.shade600),
                     prefixIcon: Icon(Icons.person, color: Colors.indigo.shade600),
                     border: OutlineInputBorder(
@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passController,
                   obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
-                    labelText: "Password",
+                    labelText: 'Password',
                     labelStyle: TextStyle(color: Colors.grey.shade600),
                     prefixIcon: Icon(Icons.lock, color: Colors.indigo.shade600),
                     suffixIcon: IconButton(
@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: _handleForgotPassword,
                     child: Text(
-                      "Forgot Password?",
+                      'Forgot Password?',
                       style: TextStyle(
                         color: Colors.indigo.shade600,
                         fontWeight: FontWeight.w600,
@@ -259,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : const Text(
-                            "LOGIN",
+                            'LOGIN',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -299,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       child: Text(
-                        "Register Here",
+                        'Register Here',
                         style: TextStyle(
                           color: Colors.indigo.shade600,
                           fontWeight: FontWeight.bold,
@@ -326,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen> {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05*255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -358,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Login as",
+                          'Login as',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -435,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              "$role Login",
+              '$role Login',
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey.shade700,

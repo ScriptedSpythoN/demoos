@@ -8,7 +8,7 @@ class CollegeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: "EduFlow",
+      title: 'EduFlow',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         useMaterial3: true,

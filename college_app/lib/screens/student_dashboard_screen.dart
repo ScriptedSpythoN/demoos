@@ -96,7 +96,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          "Student Portal",
+          'Student Portal',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
@@ -157,7 +157,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withAlpha((0.2*255).round()),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -172,7 +172,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Welcome back,",
+                      'Welcome back,',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -196,11 +196,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha((0.2*255).round()),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              "Department of Computer Science",
+              'Department of Computer Science',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -224,7 +224,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Attendance Overview",
+                'Attendance Overview',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -244,7 +244,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   size: 18,
                 ),
                 label: Text(
-                  _showOverallAttendance ? "View Subjects" : "View Overall",
+                  _showOverallAttendance ? 'View Subjects' : 'View Overall',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -313,7 +313,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withAlpha((0.1*255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -338,7 +338,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withAlpha((0.1*255).round()),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -377,7 +377,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      "${percentage.toStringAsFixed(1)}%",
+                      '${percentage.toStringAsFixed(1)}%',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -388,7 +388,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        "attendance",
+                        'attendance',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey.shade600,
@@ -429,7 +429,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: attendanceColor.withOpacity(0.3),
+            color: attendanceColor.withAlpha((0.3*255).round()),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -442,7 +442,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withAlpha((0.2*255).round()),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -454,7 +454,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               const SizedBox(width: 16),
               const Expanded(
                 child: Text(
-                  "Overall Attendance Status",
+                  'Overall Attendance Status',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -466,7 +466,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            "${overallPercentage.toStringAsFixed(1)}%",
+            '${overallPercentage.toStringAsFixed(1)}%',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 56,
@@ -477,10 +477,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             isShortage
-                ? "Attention Required!"
+                ? 'Attention Required!'
                 : overallPercentage >= 75 && overallPercentage < 80
-                    ? "Almost There!"
-                    : "Excellent Performance!",
+                    ? 'Almost There!'
+                    : 'Excellent Performance!',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 15,
@@ -493,7 +493,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             child: LinearProgressIndicator(
               value: overallPercentage / 100,
               minHeight: 12,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withAlpha((0.2*255).round()),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
@@ -503,32 +503,32 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             children: [
               _buildStatusInfo(
                 icon: Icons.check_circle_outline_rounded,
-                label: "Target",
-                value: "75%",
+                label: 'Target',
+                value: '75%',
               ),
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withAlpha((0.3*255).round()),
               ),
               _buildStatusInfo(
                 icon: Icons.school_rounded,
-                label: "Subjects",
-                value: "${_subjects.length}",
+                label: 'Subjects',
+                value: '${_subjects.length}',
               ),
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withAlpha((0.3*255).round()),
               ),
               _buildStatusInfo(
                 icon: Icons.trending_up_rounded,
-                label: "Status",
+                label: 'Status',
                 value: isShortage
-                    ? "Low"
+                    ? 'Low'
                     : overallPercentage >= 80
-                        ? "High"
-                        : "Good",
+                        ? 'High'
+                        : 'Good',
               ),
             ],
           ),
@@ -573,7 +573,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Quick Actions",
+            'Quick Actions',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -585,8 +585,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             children: [
               _buildActionCard(
                 context,
-                title: "Apply Medical",
-                subtitle: "Submit leave",
+                title: 'Apply Medical',
+                subtitle: 'Submit leave',
                 icon: Icons.medical_services_rounded,
                 gradient: LinearGradient(
                   colors: [Colors.blue.shade400, Colors.blue.shade600],
@@ -599,8 +599,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               const SizedBox(width: 12),
               _buildActionCard(
                 context,
-                title: "View History",
-                subtitle: "Past requests",
+                title: 'View History',
+                subtitle: 'Past requests',
                 icon: Icons.history_rounded,
                 gradient: LinearGradient(
                   colors: [Colors.orange.shade400, Colors.orange.shade600],
@@ -610,7 +610,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   MaterialPageRoute(
                     builder: (_) => StudentMedicalHistoryScreen(
                       studentRollNo:
-                          ApiService.currentUserId ?? "2301105277",
+                          ApiService.currentUserId ?? '2301105277',
                     ),
                   ),
                 ),
@@ -637,7 +637,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withAlpha((0.1*255).round()),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -656,7 +656,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withAlpha((0.2*255).round()),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(icon, color: Colors.white, size: 28),
@@ -695,7 +695,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Recent Notifications",
+            'Recent Notifications',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -704,23 +704,23 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
           const SizedBox(height: 16),
           _buildNotificationItem(
-            "Medical request approved",
-            "Your medical leave has been approved by HOD",
-            "2 hours ago",
+            'Medical request approved',
+            'Your medical leave has been approved by HOD',
+            '2 hours ago',
             Icons.check_circle_rounded,
             Colors.green,
           ),
           _buildNotificationItem(
-            "Attendance updated",
-            "Computer Networks attendance marked for today",
-            "Yesterday",
+            'Attendance updated',
+            'Computer Networks attendance marked for today',
+            'Yesterday',
             Icons.notifications_rounded,
             Colors.blue,
           ),
           _buildNotificationItem(
-            "Low attendance alert",
-            "Machine Learning attendance below 75%",
-            "2 days ago",
+            'Low attendance alert',
+            'Machine Learning attendance below 75%',
+            '2 days ago',
             Icons.warning_rounded,
             Colors.orange,
           ),
@@ -743,7 +743,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04*255).round()),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -754,7 +754,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withAlpha((0.1*255).round()),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: color, size: 24),
@@ -810,7 +810,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _getAttendanceColor(percentage).withOpacity(0.1),
+                color: _getAttendanceColor(percentage).withAlpha((0.1*255).round()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -835,7 +835,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "${percentage.toStringAsFixed(1)}%",
+              '${percentage.toStringAsFixed(1)}%',
               style: TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
@@ -844,28 +844,28 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Current Attendance",
+              'Current Attendance',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 24),
-            _buildDetailRow("Classes Attended", "33"),
-            _buildDetailRow("Total Classes", "40"),
+            _buildDetailRow('Classes Attended', '33'),
+            _buildDetailRow('Total Classes', '40'),
             _buildDetailRow(
-                "Status",
+                'Status',
                 percentage >= 75
-                    ? "Good"
+                    ? 'Good'
                     : percentage >= 65
-                        ? "Warning"
-                        : "Critical"),
+                        ? 'Warning'
+                        : 'Critical'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: const Text('Close'),
           ),
         ],
       ),

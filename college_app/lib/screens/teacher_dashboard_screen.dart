@@ -39,7 +39,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text("EduPiece Teacher"),
+        title: const Text('EduPiece Teacher'),
         backgroundColor: Colors.indigo.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -69,7 +69,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 const Icon(Icons.calendar_today_rounded, size: 18, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
-                  "Assigned Classes",
+                  'Assigned Classes',
                   style: TextStyle(
                     color: Colors.grey.shade800,
                     fontSize: 16,
@@ -118,11 +118,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Welcome,",
+                  'Welcome,',
                   style: TextStyle(color: Colors.indigo.shade100, fontSize: 14),
                 ),
                 Text(
-                  ApiService.currentUserName ?? "Professor",
+                  ApiService.currentUserName ?? 'Professor',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -147,7 +147,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.indigo.withOpacity(0.08),
+              color: Colors.indigo.withAlpha((0.08*255).round()),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -168,10 +168,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("AI Answer Checker",
+                  Text('AI Answer Checker',
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text("Auto-grade scanned papers",
+                  Text('Auto-grade scanned papers',
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
@@ -192,7 +192,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 ),
                 elevation: 0,
               ),
-              child: const Text("Open"),
+              child: const Text('Open'),
             )
           ],
         ),
@@ -209,7 +209,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         }
         
         if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
 
         final classes = snapshot.data ?? [];
@@ -222,7 +222,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 Icon(Icons.event_busy, size: 60, color: Colors.grey.shade400),
                 const SizedBox(height: 16),
                 Text(
-                  "No classes assigned",
+                  'No classes assigned',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                 ),
               ],
@@ -237,18 +237,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             final cls = classes[index];
             return _buildClassCard(
               context,
-              subjectName: cls['subject_name'] ?? "Unknown",
-              subjectCode: cls['subject_code'] ?? "---",
-              timeSlot: cls['time_slot'] ?? "TBD",
-              room: cls['room'] ?? "LH",
-              className: cls['class_identifier'] ?? "General",
+              subjectName: cls['subject_name'] ?? 'Unknown',
+              subjectCode: cls['subject_code'] ?? '---',
+              timeSlot: cls['time_slot'] ?? 'TBD',
+              room: cls['room'] ?? 'LH',
+              className: cls['class_identifier'] ?? 'General',
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AttendanceScreen(
-                      classId: cls['class_identifier'], // "CSE - 6th Sem"
-                      subjectId: cls['subject_code'],   // "CS601"
+                      classId: cls['class_identifier'], // 'CSE - 6th Sem'
+                      subjectId: cls['subject_code'],   // 'CS601'
                     ),
                   ),
                 );
@@ -274,7 +274,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withOpacity(0.08),
+            color: Colors.indigo.withAlpha((0.08*255).round()),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

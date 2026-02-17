@@ -5,6 +5,10 @@ class MedicalEntry {
   final DateTime toDate;
   final String status;
   final String? hodRemark;
+  final String reason;
+  final String? documentPath;
+  final String? ocrStatus;
+  final String? ocrText;
 
   MedicalEntry({
     required this.requestId,
@@ -12,6 +16,10 @@ class MedicalEntry {
     required this.fromDate,
     required this.toDate,
     required this.status,
-    this.hodRemark, required documentPath, required ocrStatus, required ocrText, required reason,
+    this.hodRemark,
+    required this.reason,
+    this.documentPath,
+    this.ocrStatus,
+    this.ocrText,
   });
 }

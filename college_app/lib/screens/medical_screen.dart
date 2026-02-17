@@ -57,27 +57,27 @@ class _MedicalScreenState extends State<MedicalScreen>
         _fromDate == null ||
         _toDate == null ||
         _reason.isEmpty) {
-      _showErrorSnackBar("Please complete all fields");
+      _showErrorSnackBar('Please complete all fields');
       return;
     }
 
     if (_toDate!.isBefore(_fromDate!)) {
-      _showErrorSnackBar("End date must be after start date");
+      _showErrorSnackBar('End date must be after start date');
       return;
     }
 
     setState(() => submitting = true);
     try {
       await ApiService.submitMedical(
-        studentRollNo: "CSE045", // Example student
-        departmentId: "CSE",
+        studentRollNo: 'CSE045', // Example student
+        departmentId: 'CSE',
         fromDate: _fromDate!,
         toDate: _toDate!,
         reason: _reason,
         pdfFile: _selectedFile!,
       );
 
-      _showSuccessSnackBar("Request submitted successfully!");
+      _showSuccessSnackBar('Request submitted successfully!');
 
       setState(() {
         _selectedFile = null;
@@ -87,7 +87,7 @@ class _MedicalScreenState extends State<MedicalScreen>
         _reasonController.clear();
       });
     } catch (e) {
-      _showErrorSnackBar("Failed to submit: ${e.toString()}");
+      _showErrorSnackBar('Failed to submit: ${e.toString()}');
     } finally {
       setState(() => submitting = false);
     }
@@ -212,7 +212,7 @@ class _MedicalScreenState extends State<MedicalScreen>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withAlpha((0.2*255).round()),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
@@ -226,7 +226,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Medical Leave",
+                      'Medical Leave',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -236,7 +236,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                     ),
                     SizedBox(height: 4),
                     Text(
-                      "Submit your medical certificate",
+                      'Submit your medical certificate',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -274,7 +274,7 @@ class _MedicalScreenState extends State<MedicalScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.indigo.withOpacity(0.1),
+                  color: Colors.indigo.withAlpha((0.1*255).round()),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -292,7 +292,7 @@ class _MedicalScreenState extends State<MedicalScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Quick Tips",
+                  'Quick Tips',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -301,7 +301,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Upload a clear PDF of your medical certificate and specify the leave duration",
+                  'Upload a clear PDF of your medical certificate and specify the leave duration',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade700,
@@ -322,15 +322,15 @@ class _MedicalScreenState extends State<MedicalScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle("Medical Certificate", Icons.upload_file_rounded),
+          _buildSectionTitle('Medical Certificate', Icons.upload_file_rounded),
           const SizedBox(height: 12),
           _buildFileUploadCard(),
           const SizedBox(height: 24),
-          _buildSectionTitle("Leave Duration", Icons.calendar_month_rounded),
+          _buildSectionTitle('Leave Duration', Icons.calendar_month_rounded),
           const SizedBox(height: 12),
           _buildDateRangeCards(),
           const SizedBox(height: 24),
-          _buildSectionTitle("Reason for Leave", Icons.description_rounded),
+          _buildSectionTitle('Reason for Leave', Icons.description_rounded),
           const SizedBox(height: 12),
           _buildReasonField(),
         ],
@@ -373,7 +373,7 @@ class _MedicalScreenState extends State<MedicalScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withAlpha((0.04*255).round()),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -400,7 +400,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _selectedFile!.path.split("/").last,
+                          _selectedFile!.path.split('/').last,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -411,7 +411,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "PDF Document",
+                          'PDF Document',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade500,
@@ -450,7 +450,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Tap to upload PDF",
+                    'Tap to upload PDF',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -459,7 +459,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Medical certificate in PDF format only",
+                    'Medical certificate in PDF format only',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade500,
@@ -493,7 +493,7 @@ class _MedicalScreenState extends State<MedicalScreen>
 
   Widget _buildDateCard({required bool isFrom}) {
     final date = isFrom ? _fromDate : _toDate;
-    final label = isFrom ? "From Date" : "To Date";
+    final label = isFrom ? 'From Date' : 'To Date';
     final hasDate = date != null;
 
     return GestureDetector(
@@ -509,7 +509,7 @@ class _MedicalScreenState extends State<MedicalScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withAlpha((0.04*255).round()),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -542,7 +542,7 @@ class _MedicalScreenState extends State<MedicalScreen>
             Text(
               hasDate
                   ? "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}"
-                  : "Select date",
+                  : 'Select date',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -562,7 +562,7 @@ class _MedicalScreenState extends State<MedicalScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04*255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -570,10 +570,15 @@ class _MedicalScreenState extends State<MedicalScreen>
       ),
       child: TextField(
         controller: _reasonController,
-        onChanged: (val) => _reason = val,
+        // FIX: Added setState so the UI rebuilds and enables the Submit button
+        onChanged: (val) {
+          setState(() {
+            _reason = val;
+          });
+        },
         maxLines: 4,
         decoration: InputDecoration(
-          hintText: "e.g., Fever and flu, advised bed rest for 3 days...",
+          hintText: 'e.g., Fever and flu, advised bed rest for 3 days...',
           hintStyle: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade400,
@@ -615,7 +620,7 @@ class _MedicalScreenState extends State<MedicalScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha((0.08*255).round()),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -636,7 +641,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                         size: 16, color: Colors.orange.shade600),
                     const SizedBox(width: 8),
                     Text(
-                      "Please complete all fields",
+                      'Please complete all fields',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange.shade600,
@@ -674,7 +679,7 @@ class _MedicalScreenState extends State<MedicalScreen>
                         Icon(Icons.send_rounded, size: 20),
                         SizedBox(width: 8),
                         Text(
-                          "Submit Medical Leave Request",
+                          'Submit Medical Leave Request',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

@@ -32,12 +32,14 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
   Future<void> _analyzeAnswer() async {
     if (_selectedImage == null || _keywordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select image and enter keywords")),
+        const SnackBar(content: Text('Please select image and enter keywords')),
       );
       return;
     }
 
     setState(() => _isAnalyzing = true);
+
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       var request = http.MultipartRequest(
@@ -46,8 +48,8 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
       );
 
       request.fields['keywords'] = _keywordController.text;
-      request.fields['total_marks'] = "10";
-      
+      request.fields['total_marks'] = '10';
+
       request.files.add(await http.MultipartFile.fromPath(
         'file',
         _selectedImage!.path,
@@ -60,11 +62,12 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
           _result = jsonDecode(response.body);
         });
       } else {
-        throw Exception("Server Error: ${response.body}");
+        throw Exception('Server Error: ${response.body}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Analysis Failed: $e")),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Analysis Failed: $e')),
       );
     } finally {
       setState(() => _isAnalyzing = false);
@@ -76,7 +79,7 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text("AI Answer Checker"),
+        title: const Text('AI Answer Checker'),
         backgroundColor: Colors.indigo.shade700,
         foregroundColor: Colors.white,
       ),
@@ -88,7 +91,8 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
             // 1. Image Picker Card
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               child: InkWell(
                 onTap: () => _pickImage(ImageSource.gallery),
                 borderRadius: BorderRadius.circular(16),
@@ -99,7 +103,8 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
                     borderRadius: BorderRadius.circular(16),
                     image: _selectedImage != null
                         ? DecorationImage(
-                            image: FileImage(_selectedImage!), fit: BoxFit.cover)
+                            image: FileImage(_selectedImage!),
+                            fit: BoxFit.cover)
                         : null,
                   ),
                   child: _selectedImage == null
@@ -109,7 +114,7 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
                             Icon(Icons.add_a_photo,
                                 size: 50, color: Colors.indigo.shade300),
                             const SizedBox(height: 10),
-                            Text("Tap to upload Answer Sheet",
+                            Text('Tap to upload Answer Sheet',
                                 style: TextStyle(color: Colors.grey.shade600)),
                           ],
                         )
@@ -123,9 +128,10 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
             TextField(
               controller: _keywordController,
               decoration: InputDecoration(
-                labelText: "Expected Keywords (Answer Key)",
-                hintText: "e.g., polymorphism, inheritance, class, object",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelText: 'Expected Keywords (Answer Key)',
+                hintText: 'e.g., polymorphism, inheritance, class, object',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
                 prefixIcon: const Icon(Icons.vpn_key),
@@ -141,15 +147,18 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.auto_awesome),
-              label: Text(_isAnalyzing ? "Analyzing..." : "Evaluate with AI"),
+              label: Text(_isAnalyzing ? 'Analyzing...' : 'Evaluate with AI'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo.shade600,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                textStyle:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 24),
@@ -174,13 +183,16 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.indigo.withOpacity(0.1), blurRadius: 15, offset: const Offset(0,5))
+          BoxShadow(
+              color: Colors.indigo.withAlpha((0.1*255).round()),
+              blurRadius: 15,
+              offset: const Offset(0, 5))
         ],
         border: Border.all(color: Colors.indigo.shade100),
       ),
       child: Column(
         children: [
-          const Text("AI Evaluation Report",
+          const Text('AI Evaluation Report',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const Divider(height: 30),
           Row(
@@ -193,7 +205,7 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
               ),
               const SizedBox(width: 20),
               Text(
-                "$score / $total",
+                '$score / $total',
                 style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
@@ -211,7 +223,7 @@ class _AiEvaluationScreenState extends State<AiEvaluationScreen> {
           if (missing.isNotEmpty) ...[
             Align(
               alignment: Alignment.centerLeft,
-              child: Text("Missing Concepts:",
+              child: Text('Missing Concepts:',
                   style: TextStyle(
                       color: Colors.red.shade700, fontWeight: FontWeight.bold)),
             ),

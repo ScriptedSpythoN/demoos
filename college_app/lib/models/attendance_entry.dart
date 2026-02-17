@@ -8,7 +8,7 @@ class AttendanceEntry {
   Map<String, dynamic> toJson() {
     return {
       'roll_no': rollNo,
-      'status': status ?? "ABSENT",
+      'status': status ?? 'ABSENT',
     };
   }
 }

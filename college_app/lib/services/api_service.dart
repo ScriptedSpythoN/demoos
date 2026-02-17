@@ -35,13 +35,13 @@ class ApiService {
         // Ensure backend sends 'user_id' or fallback to username
         currentUserId = data['user_id'] ?? username; 
 
-        await _storage.write(key: "auth_token", value: _token);
+        await _storage.write(key: 'auth_token', value: _token);
         return true;
       }
-      print("Login Failed: ${response.body}");
+      print('Login Failed: ${response.body}');
       return false;
     } catch (e) {
-      print("Login Error: $e");
+      print('Login Error: $e');
       return false;
     }
   }
@@ -51,7 +51,7 @@ class ApiService {
     userRole = null;
     currentUserName = null;
     currentUserId = null;
-    await _storage.delete(key: "auth_token");
+    await _storage.delete(key: 'auth_token');
   }
 
   // --- ATTENDANCE & SCHEDULE METHODS ---
@@ -71,11 +71,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(response.body));
       } else {
-        print("Schedule Fetch Failed: ${response.statusCode}");
+        print('Schedule Fetch Failed: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print("Error fetching schedule: $e");
+      print('Error fetching schedule: $e');
       return [];
     }
   }
@@ -119,14 +119,14 @@ class ApiService {
   static Future<Map<String, dynamic>> fetchStudentStats(
       String studentId) async {
     final response = await http.get(
-      Uri.parse("${AppConfig.baseUrl}/api/attendance/student/stats/$studentId"),
+      Uri.parse('${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
       headers: _getHeaders(),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
-    throw Exception("Failed to load stats");
+    throw Exception('Failed to load stats');
   }
 
   // --- MEDICAL METHODS ---
@@ -191,8 +191,8 @@ class ApiService {
                 hodRemark: r['hod_remark'],
 
                 // --- NEW FIELDS (From File 1) ---
-                reason: r['reason'] ?? "No reason provided",
-                documentPath: r['document_path'] ?? "",
+                reason: r['reason'] ?? 'No reason provided',
+                documentPath: r['document_path'] ?? '',
                 ocrText: r['ocr_text'],
                 ocrStatus: r['ocr_status'],
               ))
@@ -207,7 +207,7 @@ class ApiService {
       Uri.parse('${AppConfig.baseUrl}/api/medical/hod/review'),
       headers: _getHeaders(),
       body: jsonEncode(
-          {'request_id': requestId, 'action': action, 'remark': remark ?? ""}),
+          {'request_id': requestId, 'action': action, 'remark': remark ?? ''}),
     );
     if (response.statusCode != 200) {
       throw Exception('Review failed: ${response.body}');
