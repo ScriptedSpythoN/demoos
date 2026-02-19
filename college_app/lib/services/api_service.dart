@@ -16,36 +16,47 @@ class ApiService {
 
   // --- AUTH METHODS ---
 
-  static Future<bool> login(String username, String password) async {
-    try {
-      // OAuth2 expects form-urlencoded, not JSON
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/auth/login'),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {'username': username, 'password': password},
-      );
+ static Future<bool> login(String username, String password) async {
+  try {
+    // OAuth2 expects form-urlencoded
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/api/auth/login'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        'username': username,
+        'password': password,
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _token = data['access_token'];
-        userRole = data['role'];
-        currentUserName = data['full_name'];
-        // Ensure backend sends 'user_id' or fallback to username
-        currentUserId = data['user_id'] ?? username; 
+    print('🔐 Login Response Status: ${response.statusCode}');
+    print('📦 Login Response Body: ${response.body}');
 
-        await _storage.write(key: 'auth_token', value: _token);
-        return true;
-      }
-      print('Login Failed: ${response.body}');
-      return false;
-    } catch (e) {
-      print('Login Error: $e');
-      return false;
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _token = data['access_token'];
+      userRole = data['role'];
+      currentUserName = data['full_name'];
+      currentUserId = data['user_id'] ?? username;
+
+      await _storage.write(key: 'auth_token', value: _token);
+      
+      print('✅ Login Success!');
+      print('👤 Role: $userRole');
+      print('📛 Name: $currentUserName');
+      print('🆔 ID: $currentUserId');
+      
+      return true;
     }
+    
+    print('❌ Login Failed: ${response.body}');
+    return false;
+  } catch (e) {
+    print('🔥 Login Error: $e');
+    return false;
   }
-
+}
   static Future<void> logout() async {
     _token = null;
     userRole = null;

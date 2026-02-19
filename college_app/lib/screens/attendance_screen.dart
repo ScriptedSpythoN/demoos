@@ -21,10 +21,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
 
-  // Swipe mode variables
   bool _isSwipeMode = true;
   int _currentCardIndex = 0;
-  bool _isAnimating = false; // NEW: Prevents double-clicks
+  bool _isAnimating = false; 
   late AnimationController _cardAnimationController;
   late AnimationController _celebrationController;
   late Animation<Offset> _cardSlideAnimation;
@@ -36,12 +35,17 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   @override
   void initState() {
     super.initState();
-    _loadRollList();
+    
+    // FIX: Use addPostFrameCallback to ensure context is ready for ScaffoldMessenger
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRollList();
+    });
+
     _searchController.addListener(_filterSearch);
 
     _cardAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300), // Slightly faster
+      duration: const Duration(milliseconds: 300),
     );
 
     _celebrationController = AnimationController(
@@ -59,6 +63,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Future<void> _loadRollList() async {
+    // ScaffoldMessenger.of(context) is now safe here because of addPostFrameCallback
     final messenger = ScaffoldMessenger.of(context);
     try {
       final list =
@@ -71,9 +76,12 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       });
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
       messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
+
+  // ... (Keep the rest of your original methods: _filterSearch, _markAll, _onSwipe, etc.)
 
   void _filterSearch() {
     String query = _searchController.text.toLowerCase();
@@ -100,11 +108,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   void _onSwipe(String status) {
-    // 1. Safety Checks
     if (_currentCardIndex >= _filteredStudents.length) return;
-    if (_isAnimating) return; // FIX: Prevents double triggering
+    if (_isAnimating) return; 
 
-    setState(() => _isAnimating = true); // Lock animation
+    setState(() => _isAnimating = true); 
 
     HapticFeedback.lightImpact();
 
@@ -134,17 +141,15 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       curve: Curves.easeOut,
     ));
 
-    // 2. Mark Data Immediately
     setState(() {
       _filteredStudents[_currentCardIndex].status = status;
     });
 
-    // 3. Play Animation
     _cardAnimationController.forward().then((_) {
       setState(() {
         _currentCardIndex++;
         _dragOffset = Offset.zero;
-        _isAnimating = false; // Unlock
+        _isAnimating = false; 
       });
       _cardAnimationController.reset();
 
@@ -183,9 +188,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildModernAppBar, _buildModeToggle as is) ...
+  // ... (Include your helper methods: _buildModernAppBar, _buildModeToggle, _buildSwipeView, etc.)
+  // Note: These remain the same as your provided code.
+  
   Widget _buildModernAppBar() {
-    // Re-calculate counts on every build
     int markedCount = _allStudents.where((s) => s.status != null).length;
     int totalCount = _allStudents.length;
 
@@ -226,7 +232,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                         Text(
                           '$markedCount / $totalCount Marked • Class ${widget.classId}',
                           style: TextStyle(
-                            color: Colors.white.withAlpha((0.8*255).round()),
+                            color: Colors.white.withOpacity(0.8),
                             fontSize: 13,
                           ),
                         ),
@@ -243,7 +249,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                               color: Colors.white,
                               fontWeight: FontWeight.w600)),
                       style: TextButton.styleFrom(
-                        backgroundColor: Colors.white.withAlpha((0.2*255).round()),
+                        backgroundColor: Colors.white.withOpacity(0.2),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20)),
                       ),
@@ -251,7 +257,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 ],
               ),
             ),
-            // Progress Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
@@ -263,7 +268,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                           borderRadius: BorderRadius.circular(10),
                           child: LinearProgressIndicator(
                             value: _progress,
-                            backgroundColor: Colors.white.withAlpha((0.2*255).round()),
+                            backgroundColor: Colors.white.withOpacity(0.2),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                                 Colors.greenAccent),
                             minHeight: 8,
@@ -275,7 +280,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.greenAccent.withAlpha((0.2*255).round()),
+                          color: Colors.greenAccent.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -300,11 +305,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildModeToggle) ...
   Widget _buildModeToggle() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha((0.15*255).round()),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(25),
       ),
       padding: const EdgeInsets.all(4),
@@ -322,7 +326,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   boxShadow: _isSwipeMode
                       ? [
                           BoxShadow(
-                              color: Colors.black.withAlpha((0.1*255).round()),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2))
                         ]
@@ -335,7 +339,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       Icons.swipe_rounded,
                       color: _isSwipeMode
                           ? Colors.indigo.shade600
-                          : Colors.white.withAlpha((0.7*255).round()),
+                          : Colors.white.withOpacity(0.7),
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -344,7 +348,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       style: TextStyle(
                         color: _isSwipeMode
                             ? Colors.indigo.shade600
-                            : Colors.white.withAlpha((0.7*255).round()),
+                            : Colors.white.withOpacity(0.7),
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -366,7 +370,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   boxShadow: !_isSwipeMode
                       ? [
                           BoxShadow(
-                              color: Colors.black.withAlpha((0.1*255).round()),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2))
                         ]
@@ -379,7 +383,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       Icons.list_rounded,
                       color: !_isSwipeMode
                           ? Colors.indigo.shade600
-                          : Colors.white.withAlpha((0.7*255).round()),
+                          : Colors.white.withOpacity(0.7),
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -388,7 +392,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       style: TextStyle(
                         color: !_isSwipeMode
                             ? Colors.indigo.shade600
-                            : Colors.white.withAlpha((0.7*255).round()),
+                            : Colors.white.withOpacity(0.7),
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -403,7 +407,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Updated _buildSwipeView) ...
   Widget _buildSwipeView() {
     return _currentCardIndex >= _filteredStudents.length
         ? _buildCompletionView()
@@ -427,7 +430,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05*255).round()),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -444,13 +447,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildCardStack) ...
   Widget _buildCardStack() {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
           children: [
-            // Second card (more background)
             if (_currentCardIndex + 2 < _filteredStudents.length)
               Center(
                 child: Transform.scale(
@@ -466,7 +467,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   ),
                 ),
               ),
-            // Next card (background)
             if (_currentCardIndex + 1 < _filteredStudents.length)
               Center(
                 child: Transform.scale(
@@ -482,10 +482,8 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   ),
                 ),
               ),
-            // Current card (foreground)
             Center(
               child: GestureDetector(
-                // Only allow dragging if not animating
                 onPanStart: (_) => setState(() {
                   if (!_isAnimating) _isDragging = true;
                 }),
@@ -546,7 +544,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildSwipeOverlay, _buildStudentCard, _buildSwipeActions) ...
   Widget _buildSwipeOverlay() {
     final isPresentSwipe = _dragOffset.dx > 0;
     final opacity = (_dragOffset.dx.abs() / 150).clamp(0.0, 1.0);
@@ -560,7 +557,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
               color:
-                  (isPresentSwipe ? Colors.green : Colors.red).withAlpha((0.9*255).round()),
+                  (isPresentSwipe ? Colors.green : Colors.red).withOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -601,7 +598,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.12*255).round()),
+            color: Colors.black.withOpacity(0.12),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -631,7 +628,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha((0.2*255).round()),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -761,7 +758,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           color: Colors.white,
           shape: const CircleBorder(),
           elevation: isSecondary ? 2 : 8,
-          shadowColor: color.withAlpha((0.4*255).round()),
+          shadowColor: color.withOpacity(0.4),
           child: InkWell(
             onTap: onPressed,
             customBorder: const CircleBorder(),
@@ -773,12 +770,12 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 gradient: isSecondary
                     ? null
                     : LinearGradient(
-                        colors: [color, color.withAlpha((0.8*255).round())],
+                        colors: [color, color.withOpacity(0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                 border: isSecondary
-                    ? Border.all(color: color.withAlpha((0.3*255).round()), width: 2)
+                    ? Border.all(color: color.withOpacity(0.3), width: 2)
                     : null,
               ),
               child: Icon(
@@ -802,7 +799,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildCompletionView, _buildListViewMode, _buildSearchBar, _buildListView) ...
   Widget _buildCompletionView() {
     return Center(
       child: AnimatedBuilder(
@@ -826,7 +822,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.green.withAlpha((0.3*255).round()),
+                          color: Colors.green.withOpacity(0.3),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -918,7 +914,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildListStudentCard) ...
   Widget _buildListStudentCard(AttendanceEntry student) {
     bool isSriram = student.rollNo == '2301105277';
 
@@ -937,7 +932,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.04*255).round()),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1014,7 +1009,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     );
   }
 
-  // ... (Keep _buildCompactAction, _buildBottomAction, _submit) ...
   Widget _buildCompactAction(
       AttendanceEntry student, String status, IconData icon, Color color) {
     bool active = student.status == status;
@@ -1046,7 +1040,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.05*255).round()),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

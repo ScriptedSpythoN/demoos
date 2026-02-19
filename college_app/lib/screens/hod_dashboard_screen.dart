@@ -1,6 +1,9 @@
+// lib/screens/hod_dashboard_screen.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/medical_entry.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import 'medical_detail_screen.dart';
 import 'login_screen.dart';
 
@@ -16,21 +19,21 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
     with SingleTickerProviderStateMixin {
   List<MedicalEntry> pendingRequests = [];
   bool isLoading = true;
-  late AnimationController _animController;
+  late AnimationController _staggerCtrl;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _staggerCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 800),
     );
     _loadPendingRequests();
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _staggerCtrl.dispose();
     super.dispose();
   }
 
@@ -38,26 +41,29 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
     setState(() => isLoading = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final requests =
-          await ApiService.fetchPendingMedical(widget.departmentId);
+      final requests = await ApiService.fetchPendingMedical(widget.departmentId);
       if (!mounted) return;
       setState(() {
         pendingRequests = requests;
         isLoading = false;
       });
-      _animController.forward(from: 0);
+      _staggerCtrl.reset();
+      _staggerCtrl.forward();
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
       messenger.showSnackBar(SnackBar(
-        content: Row(children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
-          Text('Error: $e'),
-        ]),
-        backgroundColor: Colors.red.shade600,
+        content: Row(
+          children: [
+            const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Error: $e',
+                style: const TextStyle(color: Colors.white))),
+          ],
+        ),
+        backgroundColor: AppTheme.accentPink.withOpacity(0.90),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.all(16),
       ));
     }
@@ -67,292 +73,294 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
     final nav = Navigator.of(context);
     await ApiService.logout();
     if (!mounted) return;
-    nav.pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()));
+    nav.pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
+      backgroundColor: AppTheme.bgPrimary,
+      body: Stack(
         children: [
-          _buildAppBar(),
-          _buildStatsSection(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
+          _buildBackground(),
+          SafeArea(
+            child: Column(
               children: [
-                Icon(Icons.inbox_rounded,
-                    size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  'Pending Approvals',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                  ),
+                _buildTopBar(),
+                _buildStatsRow(),
+                _buildSectionHeader(),
+                Expanded(
+                  child: isLoading
+                      ? _buildLoadingState()
+                      : pendingRequests.isEmpty
+                          ? _buildEmptyState()
+                          : _buildRequestList(),
                 ),
-                const Spacer(),
-                if (!isLoading)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: pendingRequests.isEmpty
-                          ? Colors.green.shade50
-                          : Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: pendingRequests.isEmpty
-                            ? Colors.green.shade200
-                            : Colors.orange.shade200,
-                      ),
-                    ),
-                    child: Text(
-                      '${pendingRequests.length} request${pendingRequests.length == 1 ? '' : 's'}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: pendingRequests.isEmpty
-                            ? Colors.green.shade600
-                            : Colors.orange.shade700,
-                      ),
-                    ),
-                  ),
               ],
             ),
-          ),
-          Expanded(
-            child: isLoading
-                ? _buildLoadingState()
-                : pendingRequests.isEmpty
-                    ? _buildEmptyState()
-                    : _buildRequestList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  // ── Background ────────────────────────────────────────────────
+  Widget _buildBackground() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.indigo.shade800, Colors.indigo.shade600],
+          colors: [
+            Color(0xFF0A0A0F),
+            Color(0xFF0B0A14),
+            Color(0xFF0D0B1A),
+          ],
           begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          end: Alignment.bottomCenter,
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 12, 20),
-          child: Row(
-            children: [
-              // HOD avatar
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha((0.2 * 255).round()),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: Colors.indigo.shade100,
-                  child: Icon(Icons.admin_panel_settings_rounded,
-                      color: Colors.indigo.shade700, size: 24),
-                ),
+    );
+  }
+
+  // ── Top bar ───────────────────────────────────────────────────
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Row(
+        children: [
+          // HOD avatar
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accentViolet,
+                  AppTheme.accentViolet.withOpacity(0.6),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'HOD Dashboard',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha((0.8 * 255).round()),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.departmentId,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentViolet.withOpacity(0.40),
+                  blurRadius: 14,
                 ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha((0.15 * 255).round()),
-                  borderRadius: BorderRadius.circular(12),
+              ],
+            ),
+            child: const Icon(Icons.admin_panel_settings_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'HOD Dashboard',
+                  style: TextStyle(
+                    color: AppTheme.accentViolet.withOpacity(0.80),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                child: IconButton(
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: _loadPendingRequests,
-                  tooltip: 'Refresh',
+                Text(
+                  widget.departmentId,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha((0.15 * 255).round()),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.logout_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: _logout,
-                  tooltip: 'Logout',
-                ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          // Actions
+          _buildIconAction(Icons.refresh_rounded, _loadPendingRequests),
+          const SizedBox(width: 8),
+          _buildIconAction(Icons.logout_rounded, _logout),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconAction(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF).withOpacity(0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.10)),
+            ),
+            child: Icon(icon,
+                color: AppTheme.textPrimary.withOpacity(0.70), size: 18),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatsSection() {
-    return Container(
-      color: Colors.indigo.shade800,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+  // ── Stats row ─────────────────────────────────────────────────
+  Widget _buildStatsRow() {
+    final flagged = pendingRequests
+        .where((r) => r.ocrStatus == 'MISMATCH')
+        .length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          _buildStatCard(
+            value: isLoading ? '—' : '${pendingRequests.length}',
+            label: 'Awaiting',
+            icon: Icons.pending_actions_rounded,
+            color: AppTheme.accentAmber,
           ),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-        child: Row(
-          children: [
-            _buildStatCard(
-              icon: Icons.pending_actions_rounded,
-              label: 'Awaiting',
-              value: isLoading ? '--' : '${pendingRequests.length}',
-              color: Colors.orange,
-            ),
-            const SizedBox(width: 12),
-            _buildStatCard(
-              icon: Icons.warning_amber_rounded,
-              label: 'AI Flagged',
-              value: isLoading
-                  ? '--'
-                  : '${pendingRequests.where((r) => r.ocrStatus == 'MISMATCH').length}',
-              color: Colors.red,
-            ),
-            const SizedBox(width: 12),
-            _buildStatCard(
-              icon: Icons.check_circle_outline_rounded,
-              label: 'Reviewed',
-              value: '0',
-              color: Colors.green,
-            ),
-          ],
-        ),
+          const SizedBox(width: 10),
+          _buildStatCard(
+            value: isLoading ? '—' : '$flagged',
+            label: 'AI Flagged',
+            icon: Icons.smart_toy_rounded,
+            color: AppTheme.accentPink,
+          ),
+          const SizedBox(width: 10),
+          _buildStatCard(
+            value: '0',
+            label: 'Reviewed',
+            icon: Icons.check_circle_outline_rounded,
+            color: AppTheme.accentTeal,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatCard({
-    required IconData icon,
-    required String label,
     required String value,
+    required String label,
+    required IconData icon,
     required Color color,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha((0.04 * 255).round()),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.18)),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withAlpha((0.1 * 255).round()),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppTheme.textPrimary.withOpacity(0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  // ── Section header ────────────────────────────────────────────
+  Widget _buildSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Row(
+        children: [
+          Icon(Icons.inbox_rounded,
+              color: AppTheme.textPrimary.withOpacity(0.45), size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Pending Approvals',
+            style: TextStyle(
+              color: AppTheme.textPrimary.withOpacity(0.70),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          if (!isLoading)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: pendingRequests.isEmpty
+                    ? AppTheme.accentTeal.withOpacity(0.12)
+                    : AppTheme.accentAmber.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: pendingRequests.isEmpty
+                      ? AppTheme.accentTeal.withOpacity(0.25)
+                      : AppTheme.accentAmber.withOpacity(0.25),
+                ),
+              ),
+              child: Text(
+                '${pendingRequests.length} request${pendingRequests.length == 1 ? '' : 's'}',
+                style: TextStyle(
+                  color: pendingRequests.isEmpty
+                      ? AppTheme.accentTeal
+                      : AppTheme.accentAmber,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Request list ──────────────────────────────────────────────
   Widget _buildRequestList() {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       itemCount: pendingRequests.length,
       itemBuilder: (context, index) {
         final req = pendingRequests[index];
         return AnimatedBuilder(
-          animation: _animController,
+          animation: _staggerCtrl,
           builder: (context, child) {
-            final delay = (index * 0.1).clamp(0.0, 0.8);
-            final slideAnim = Tween<Offset>(
-              begin: const Offset(0, 0.2),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: _animController,
-              curve: Interval(delay, (delay + 0.4).clamp(0.0, 1.0),
-                  curve: Curves.easeOutCubic),
-            ));
-            final fadeAnim = Tween<double>(begin: 0, end: 1).animate(
+            final s = (index * 0.09).clamp(0.0, 0.75);
+            final e = (s + 0.35).clamp(0.0, 1.0);
+            final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
               CurvedAnimation(
-                parent: _animController,
-                curve: Interval(delay, (delay + 0.4).clamp(0.0, 1.0)),
-              ),
+                  parent: _staggerCtrl,
+                  curve: Interval(s, e, curve: Curves.easeOut)),
             );
+            final slide = Tween<Offset>(
+                    begin: const Offset(0, 0.05), end: Offset.zero)
+                .animate(CurvedAnimation(
+                    parent: _staggerCtrl,
+                    curve: Interval(s, e, curve: Curves.easeOutCubic)));
             return FadeTransition(
-              opacity: fadeAnim,
-              child: SlideTransition(position: slideAnim, child: child),
+              opacity: fade,
+              child: SlideTransition(position: slide, child: child),
             );
           },
           child: _buildRequestCard(req),
@@ -362,7 +370,7 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
   }
 
   Widget _buildRequestCard(MedicalEntry req) {
-    final bool hasMismatch = req.ocrStatus == 'MISMATCH';
+    final hasMismatch = req.ocrStatus == 'MISMATCH';
     final dayCount = req.toDate.difference(req.fromDate).inDays + 1;
     final initials = req.studentRollNo.length >= 2
         ? req.studentRollNo.substring(req.studentRollNo.length - 2)
@@ -372,189 +380,229 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
       onTap: () async {
         final result = await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => MedicalDetailScreen(entry: req),
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => MedicalDetailScreen(entry: req),
+            transitionsBuilder: (_, anim, __, child) => SlideTransition(
+              position: Tween<Offset>(
+                      begin: const Offset(1, 0), end: Offset.zero)
+                  .animate(CurvedAnimation(
+                      parent: anim, curve: Curves.easeOutCubic)),
+              child: child,
+            ),
+            transitionDuration: const Duration(milliseconds: 350),
           ),
         );
         if (result == true) _loadPendingRequests();
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          border: hasMismatch
-              ? Border.all(color: Colors.red.shade200, width: 1.5)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: hasMismatch
-                  ? Colors.red.withAlpha((0.08 * 255).round())
-                  : Colors.black.withAlpha((0.05 * 255).round()),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // AI Warning Banner
-            if (hasMismatch)
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: hasMismatch
+                    ? AppTheme.accentPink.withOpacity(0.07)
+                    : const Color(0xFFFFFFFF).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: hasMismatch
+                      ? AppTheme.accentPink.withOpacity(0.25)
+                      : const Color(0xFFFFFFFF).withOpacity(0.10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: hasMismatch
+                        ? AppTheme.accentPink.withOpacity(0.12)
+                        : Colors.black.withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.smart_toy_rounded,
-                        size: 14, color: Colors.red.shade600),
-                    const SizedBox(width: 6),
-                    Text(
-                      'AI flagged: Date mismatch detected in document',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+              child: Column(
                 children: [
-                  // Avatar
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.indigo.shade400,
-                          Colors.blue.shade500
+                  // AI flag banner
+                  if (hasMismatch)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentPink.withOpacity(0.12),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.smart_toy_rounded,
+                              size: 13, color: AppTheme.accentPink),
+                          const SizedBox(width: 6),
+                          Text(
+                            'AI flagged: Date mismatch detected in document',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.accentPink.withOpacity(0.90),
+                            ),
+                          ),
                         ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
 
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        Text(
-                          req.studentRollNo,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Colors.black87,
+                        // Avatar
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.accentViolet,
+                                AppTheme.accentViolet.withOpacity(0.60),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.accentViolet.withOpacity(0.30),
+                                blurRadius: 10,
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          req.reason,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today_rounded,
-                                size: 12,
-                                color: Colors.indigo.shade400),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_fmt(req.fromDate)} → ${_fmt(req.toDate)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.indigo.shade600,
-                                fontWeight: FontWeight.w500,
+                          child: Center(
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                req.studentRollNo,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                req.reason,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textPrimary.withOpacity(0.45),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded,
+                                      size: 11,
+                                      color: AppTheme.accentViolet.withOpacity(0.80)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_fmt(req.fromDate)} → ${_fmt(req.toDate)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.accentViolet.withOpacity(0.90),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFFFFF).withOpacity(0.06),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '$dayCount d',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textPrimary.withOpacity(0.50),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Status + chevron
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                '$dayCount ${dayCount == 1 ? 'day' : 'days'}',
+                                  horizontal: 8, vertical: 4),
+                              decoration: AppTheme.statusBadgeDecor('PENDING'),
+                              child: const Text(
+                                'Pending',
                                 style: TextStyle(
+                                  color: AppTheme.statusPending,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            Icon(Icons.chevron_right_rounded,
+                                color: AppTheme.textPrimary.withOpacity(0.30),
+                                size: 20),
                           ],
                         ),
                       ],
                     ),
                   ),
-
-                  // Chevron
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.chevron_right_rounded,
-                        color: Colors.grey.shade400, size: 20),
-                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  // ── Loading state ─────────────────────────────────────────────
   Widget _buildLoadingState() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 4,
-      itemBuilder: (context, index) => Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: List.generate(4, (i) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: _ShimmerCard(),
+            ),
+          ),
+        )),
       ),
     );
   }
 
+  // ── Empty state ───────────────────────────────────────────────
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -566,27 +614,29 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green.shade400, Colors.teal.shade400],
+                  colors: [
+                    AppTheme.accentTeal.withOpacity(0.20),
+                    AppTheme.accentTeal.withOpacity(0.05),
+                  ],
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withAlpha((0.3 * 255).round()),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  )
+                    color: AppTheme.accentTeal.withOpacity(0.25),
+                    blurRadius: 28,
+                  ),
                 ],
               ),
               child: const Icon(Icons.done_all_rounded,
-                  size: 52, color: Colors.white),
+                  size: 52, color: AppTheme.accentTeal),
             ),
             const SizedBox(height: 24),
             const Text(
               'All Caught Up!',
               style: TextStyle(
+                color: AppTheme.textPrimary,
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
@@ -594,23 +644,43 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
               'No pending medical requests\nfor ${widget.departmentId} department',
               textAlign: TextAlign.center,
               style: TextStyle(
+                color: AppTheme.textPrimary.withOpacity(0.40),
                 fontSize: 14,
-                color: Colors.grey.shade500,
                 height: 1.5,
               ),
             ),
             const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: _loadPendingRequests,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Check Again'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.indigo.shade600,
-                side: BorderSide(color: Colors.indigo.shade300),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+            GestureDetector(
+              onTap: _loadPendingRequests,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentViolet.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: AppTheme.accentViolet.withOpacity(0.30)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.accentViolet.withOpacity(0.20),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded,
+                        color: AppTheme.accentViolet, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Check Again',
+                      style: TextStyle(
+                        color: AppTheme.accentViolet,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -620,5 +690,85 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen>
   }
 
   String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+}
+
+// ── Shimmer card ──────────────────────────────────────────────────
+class _ShimmerCard extends StatefulWidget {
+  @override
+  State<_ShimmerCard> createState() => _ShimmerCardState();
+}
+
+class _ShimmerCardState extends State<_ShimmerCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.03, end: 0.09)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) => Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(_anim.value),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 46, height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(_anim.value * 2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 12, width: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(_anim.value * 2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 10, width: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(_anim.value),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

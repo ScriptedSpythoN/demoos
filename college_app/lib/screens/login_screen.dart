@@ -1,5 +1,9 @@
+// lib/screens/login_screen.dart
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import 'hod_dashboard_screen.dart';
 import 'student_dashboard_screen.dart';
 import 'teacher_dashboard_screen.dart';
@@ -11,21 +15,87 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
 
-  // Role selection state
   String _selectedRole = 'Student';
   final List<String> _roles = ['Student', 'Faculty', 'HOD'];
-  bool _isRoleMenuOpen = false;
-  
-  // Password visibility state
-  bool _isPasswordVisible = false;
+
+  // Animation controllers
+  late AnimationController _orbController;
+  late AnimationController _cardEntryController;
+  late AnimationController _shakeController;
+  late AnimationController _glowPulseController;
+
+  late Animation<double> _cardFadeAnim;
+  late Animation<Offset> _cardSlideAnim;
+  late Animation<double> _shakeAnim;
+  late Animation<double> _glowAnim;
+
+  Color get _roleAccent {
+    switch (_selectedRole) {
+      case 'Faculty': return AppTheme.accentTeal;
+      case 'HOD':     return AppTheme.accentViolet;
+      default:        return AppTheme.accentBlue;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _orbController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 14),
+    )..repeat();
+
+    _cardEntryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _glowPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+
+    _cardFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _cardEntryController, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
+    );
+
+    _cardSlideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+      CurvedAnimation(parent: _cardEntryController, curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic)),
+    );
+
+    _shakeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
+    );
+
+    _glowAnim = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _glowPulseController, curve: Curves.easeInOut),
+    );
+
+    // Start entry
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _cardEntryController.forward();
+    });
+  }
 
   @override
   void dispose() {
+    _orbController.dispose();
+    _cardEntryController.dispose();
+    _shakeController.dispose();
+    _glowPulseController.dispose();
     _userController.dispose();
     _passController.dispose();
     super.dispose();
@@ -33,431 +103,668 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_userController.text.isEmpty || _passController.text.isEmpty) {
-      _showSnackBar('Please fill in all fields', Colors.red.shade600);
+      _triggerShake();
+      _showError('Please fill in all fields');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    bool success = await ApiService.login(
+    final success = await ApiService.login(
       _userController.text.trim(),
       _passController.text.trim(),
     );
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success && mounted) {
-      // Navigate based on the role stored in ApiService
-      String role = ApiService.userRole ?? 'STUDENT';
-
-      Widget nextScreen;
+    if (success) {
+      final role = ApiService.userRole ?? 'STUDENT';
+      Widget next;
       switch (role) {
         case 'HOD':
-          nextScreen = const HoDDashboardScreen(departmentId: 'CSE');
-          break;
+          next = const HoDDashboardScreen(departmentId: 'CSE'); break;
         case 'TEACHER':
-          nextScreen = const TeacherDashboardScreen();
-          break;
-        case 'STUDENT':
+          next = const TeacherDashboardScreen(); break;
         default:
-          nextScreen = const StudentDashboardScreen();
-          break;
+          next = const StudentDashboardScreen();
       }
-
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => nextScreen),
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => next,
+          transitionsBuilder: (_, anim, __, child) => SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+            child: FadeTransition(opacity: anim, child: child),
+          ),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
       );
     } else {
-      if (mounted) {
-        _showSnackBar('Invalid Credentials', Colors.red.shade600);
-      }
+      _triggerShake();
+      _showError('Invalid credentials. Please try again.');
     }
   }
 
-  void _showSnackBar(String message, Color backgroundColor) {
+  void _triggerShake() {
+    _shakeController.reset();
+    _shakeController.forward();
+  }
+
+  void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text(msg, style: const TextStyle(color: Colors.white))),
+          ],
+        ),
+        backgroundColor: AppTheme.accentPink.withOpacity(0.9),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
 
   void _handleForgotPassword() {
-    _showSnackBar(
-      'Password reset link will be sent to your registered email',
-      Colors.blue.shade600,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Password reset link will be sent to your registered email'),
+        backgroundColor: AppTheme.accentBlue.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 
   void _handleRegister() {
-    _showSnackBar(
-      'Registration feature coming soon!',
-      Colors.indigo.shade600,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Registration feature coming soon!'),
+        backgroundColor: AppTheme.accentViolet.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // App Icon
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.school_rounded,
-                    size: 80,
-                    color: Colors.indigo.shade600,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // App Title
-                const Text(
-                  'Department Nuclei',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Secure Login Portal',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // Role Selection Dropdown
-                _buildRoleSelector(),
-                const SizedBox(height: 20),
-
-                // Username Field
-                TextField(
-                  controller: _userController,
-                  decoration: InputDecoration(
-                    labelText: 'Username / Regd. No.',
-                    labelStyle: TextStyle(color: Colors.grey.shade600),
-                    prefixIcon: Icon(Icons.person, color: Colors.indigo.shade600),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.indigo.shade600, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Password Field
-                TextField(
-                  controller: _passController,
-                  obscureText: !_isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: TextStyle(color: Colors.grey.shade600),
-                    prefixIcon: Icon(Icons.lock, color: Colors.indigo.shade600),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_rounded
-                            : Icons.visibility_off_rounded,
-                        color: Colors.grey.shade600,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.indigo.shade600, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Forgot Password Link
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _handleForgotPassword,
-                    child: Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: Colors.indigo.shade600,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+      backgroundColor: AppTheme.bgPrimary,
+      body: Stack(
+        children: [
+          // Animated orb background
+          _buildOrbBackground(),
+          // Noise overlay
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.03,
+              child: Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/2/25/Abstract_noise.svg',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          // Main content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: AnimatedBuilder(
+                  animation: _shakeAnim,
+                  builder: (context, child) {
+                    final shakeOffset = math.sin(_shakeAnim.value * math.pi * 6) *
+                        (_shakeAnim.value > 0 ? 10.0 : 0.0) *
+                        (1 - _shakeAnim.value);
+                    return Transform.translate(
+                      offset: Offset(shakeOffset, 0),
+                      child: child,
+                    );
+                  },
+                  child: FadeTransition(
+                    opacity: _cardFadeAnim,
+                    child: SlideTransition(
+                      position: _cardSlideAnim,
+                      child: _buildLoginCard(),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                // Login Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo.shade600,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                    onPressed: _isLoading ? null : _handleLogin,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : const Text(
-                            'LOGIN',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
+  // ── Orb background ──────────────────────────────────────────────
+  Widget _buildOrbBackground() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _orbController,
+        builder: (context, _) {
+          final t = _orbController.value * 2 * math.pi;
+          final size = MediaQuery.of(context).size;
+
+          return Stack(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF0A0A0F),
+                      Color(0xFF0D0D1A),
+                      Color(0xFF0E0E22),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                const SizedBox(height: 24),
+              ),
+              // Orb 1 - Role accent
+              Positioned(
+                left: -80 + 50 * math.sin(t * 0.6),
+                top: 60 + 80 * math.cos(t * 0.4),
+                child: _glowOrb(280, _roleAccent.withOpacity(0.22)),
+              ),
+              // Orb 2 - Violet
+              Positioned(
+                right: -60 + 40 * math.cos(t * 0.5),
+                bottom: size.height * 0.35 + 60 * math.sin(t * 0.3),
+                child: _glowOrb(320, AppTheme.accentViolet.withOpacity(0.14)),
+              ),
+              // Orb 3 - Teal
+              Positioned(
+                left: size.width * 0.3 + 30 * math.sin(t * 0.7),
+                bottom: 40 + 50 * math.cos(t * 0.5),
+                child: _glowOrb(200, AppTheme.accentTeal.withOpacity(0.10)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-                // Register Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't Have an Account?",
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: _handleRegister,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: Colors.indigo.shade600,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        'Register Here',
-                        style: TextStyle(
-                          color: Colors.indigo.shade600,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
+  Widget _glowOrb(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, Colors.transparent],
+        ),
+      ),
+    );
+  }
+
+  // ── Login card ──────────────────────────────────────────────────
+  Widget _buildLoginCard() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF).withOpacity(0.07),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: const Color(0xFFFFFFFF).withOpacity(0.12),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 40,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 32),
+              _buildRoleSelector(),
+              const SizedBox(height: 24),
+              _buildInput(
+                controller: _userController,
+                label: _inputLabel,
+                icon: Icons.badge_outlined,
+              ),
+              const SizedBox(height: 16),
+              _buildPasswordInput(),
+              const SizedBox(height: 8),
+              _buildForgotPassword(),
+              const SizedBox(height: 24),
+              _buildLoginButton(),
+              const SizedBox(height: 20),
+              _buildDivider(),
+              const SizedBox(height: 20),
+              _buildRegisterRow(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String get _inputLabel {
+    switch (_selectedRole) {
+      case 'Faculty': return 'Employee ID';
+      case 'HOD':     return 'Employee ID';
+      default:        return 'Roll Number / Regd. No.';
+    }
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Animated glow logo
+        AnimatedBuilder(
+          animation: _glowAnim,
+          builder: (context, _) => Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _roleAccent.withOpacity(0.12),
+              border: Border.all(color: _roleAccent.withOpacity(0.30), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: _roleAccent.withOpacity(_glowAnim.value),
+                  blurRadius: 28,
                 ),
               ],
             ),
+            child: Icon(Icons.school_rounded, color: _roleAccent, size: 36),
           ),
         ),
-      ),
+        const SizedBox(height: 18),
+        const Text(
+          'Department Nuclei',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Secure Login Portal',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppTheme.textPrimary.withOpacity(0.50),
+            fontSize: 13,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 
-  // Custom Role Selector Widget
+  // ── Role selector pills ─────────────────────────────────────────
   Widget _buildRoleSelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05*255).round()),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.08)),
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Main Selector Button
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isRoleMenuOpen = !_isRoleMenuOpen;
-              });
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                children: [
-                  Icon(
-                    _getRoleIcon(_selectedRole),
-                    color: Colors.indigo.shade600,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Login as',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _selectedRole,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    _isRoleMenuOpen
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: Colors.grey.shade600,
-                  ),
-                ],
-              ),
-            ),
+          child: Row(
+            children: _roles.map((role) => _buildRolePill(role)).toList(),
           ),
-
-          // Dropdown Menu
-          if (_isRoleMenuOpen)
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              child: Column(
-                children: _roles.map((role) {
-                  if (role == _selectedRole) return const SizedBox.shrink();
-                  return _buildRoleOption(role);
-                }).toList(),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildRoleOption(String role) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedRole = role;
-          _isRoleMenuOpen = false;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.grey.shade100,
-              width: 1,
+  Widget _buildRolePill(String role) {
+    final isSelected = _selectedRole == role;
+    final accent = _accentForRole(role);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedRole = role),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? accent.withOpacity(0.20) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected
+                ? Border.all(color: accent.withOpacity(0.50))
+                : null,
+            boxShadow: isSelected
+                ? [BoxShadow(color: accent.withOpacity(0.25), blurRadius: 12)]
+                : null,
+          ),
+          child: Text(
+            role,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? accent : AppTheme.textPrimary.withOpacity(0.45),
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              letterSpacing: 0.2,
             ),
           ),
         ),
-        child: Row(
-          children: [
-            Icon(
-              _getRoleIcon(role),
-              color: Colors.grey.shade600,
-              size: 22,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '$role Login',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
-              ),
+      ),
+    );
+  }
+
+  Color _accentForRole(String role) {
+    switch (role) {
+      case 'Faculty': return AppTheme.accentTeal;
+      case 'HOD':     return AppTheme.accentViolet;
+      default:        return AppTheme.accentBlue;
+    }
+  }
+
+  // ── Glass input field ───────────────────────────────────────────
+  Widget _buildInput({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    return _GlassTextField(
+      controller: controller,
+      label: label,
+      prefixIcon: icon,
+      accentColor: _roleAccent,
+    );
+  }
+
+  Widget _buildPasswordInput() {
+    return _GlassTextField(
+      controller: _passController,
+      label: 'Password',
+      prefixIcon: Icons.lock_outline_rounded,
+      obscureText: !_isPasswordVisible,
+      accentColor: _roleAccent,
+      suffix: IconButton(
+        icon: Icon(
+          _isPasswordVisible
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
+          color: AppTheme.textPrimary.withOpacity(0.45),
+          size: 20,
+        ),
+        onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+      ),
+    );
+  }
+
+  Widget _buildForgotPassword() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: _handleForgotPassword,
+        child: Text(
+          'Forgot Password?',
+          style: TextStyle(
+            color: _roleAccent,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginButton() {
+    return GestureDetector(
+      onTap: _isLoading ? null : _handleLogin,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 54,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              _roleAccent,
+              _roleAccent.withOpacity(0.75),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: _roleAccent.withOpacity(0.40),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
+        child: Center(
+          child: _isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                )
+              : const Text(
+                  'LOGIN',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+        ),
       ),
     );
   }
 
-  IconData _getRoleIcon(String role) {
-    switch (role) {
-      case 'Student':
-        return Icons.school_rounded;
-      case 'Faculty':
-        return Icons.person_outline_rounded;
-      case 'HOD':
-        return Icons.admin_panel_settings_rounded;
-      default:
-        return Icons.person;
-    }
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(height: 1, color: const Color(0xFFFFFFFF).withOpacity(0.08)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              color: AppTheme.textPrimary.withOpacity(0.30),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(height: 1, color: const Color(0xFFFFFFFF).withOpacity(0.08)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegisterRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Don't have an account?",
+          style: TextStyle(
+            color: AppTheme.textPrimary.withOpacity(0.50),
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: _handleRegister,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _roleAccent.withOpacity(0.50)),
+            ),
+            child: Text(
+              'Register',
+              style: TextStyle(
+                color: _roleAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Glass text field widget ───────────────────────────────────────
+class _GlassTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData prefixIcon;
+  final bool obscureText;
+  final Color accentColor;
+  final Widget? suffix;
+
+  const _GlassTextField({
+    required this.controller,
+    required this.label,
+    required this.prefixIcon,
+    required this.accentColor,
+    this.obscureText = false,
+    this.suffix,
+  });
+
+  @override
+  State<_GlassTextField> createState() => _GlassTextFieldState();
+}
+
+class _GlassTextFieldState extends State<_GlassTextField>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _focusCtrl;
+  late Animation<double> _borderGlow;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _borderGlow = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _focusCtrl, curve: Curves.easeOut),
+    );
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _focusCtrl.forward();
+      } else {
+        _focusCtrl.reverse();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _borderGlow,
+      builder: (context, child) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Color.lerp(
+                    const Color(0xFFFFFFFF).withOpacity(0.10),
+                    widget.accentColor.withOpacity(0.60),
+                    _borderGlow.value,
+                  )!,
+                  width: 1 + _borderGlow.value * 0.5,
+                ),
+                boxShadow: [
+                  if (_borderGlow.value > 0.1)
+                    BoxShadow(
+                      color: widget.accentColor.withOpacity(0.12 * _borderGlow.value),
+                      blurRadius: 16,
+                    ),
+                ],
+              ),
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focusNode,
+                obscureText: widget.obscureText,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  labelText: widget.label,
+                  labelStyle: TextStyle(
+                    color: AppTheme.textPrimary.withOpacity(
+                      _borderGlow.value > 0.5 ? 0.85 : 0.45,
+                    ),
+                    fontSize: 14,
+                  ),
+                  floatingLabelStyle: TextStyle(
+                    color: widget.accentColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  prefixIcon: Icon(
+                    widget.prefixIcon,
+                    color: Color.lerp(
+                      AppTheme.textPrimary.withOpacity(0.35),
+                      widget.accentColor,
+                      _borderGlow.value,
+                    ),
+                    size: 20,
+                  ),
+                  suffixIcon: widget.suffix,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 16,
+                  ),
+                ),
+                cursorColor: widget.accentColor,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
