@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import 'registration_screen.dart';
 import 'hod_dashboard_screen.dart';
 import 'student_dashboard_screen.dart';
 import 'teacher_dashboard_screen.dart';
@@ -185,17 +186,23 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  void _handleRegister() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Registration feature coming soon!'),
-        backgroundColor: AppTheme.accentViolet.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+ void _handleRegister() {
+  Navigator.push(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (_, __, ___) =>
+          RegistrationScreen(role: _selectedRole),   // passes current role pill
+      transitionsBuilder: (_, anim, __, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+        child: FadeTransition(opacity: anim, child: child),
       ),
-    );
-  }
+      transitionDuration: const Duration(milliseconds: 450),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

@@ -14,49 +14,143 @@ class ApiService {
   static String? currentUserName;
   static String? currentUserId;
 
-  // --- AUTH METHODS ---
+  // ─────────────────────────────────────────────────────────────────
+  // AUTH METHODS
+  // ─────────────────────────────────────────────────────────────────
 
- static Future<bool> login(String username, String password) async {
-  try {
-    // OAuth2 expects form-urlencoded
-    final response = await http.post(
-      Uri.parse('${AppConfig.baseUrl}/api/auth/login'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: {
-        'username': username,
-        'password': password,
-      },
-    );
+  static Future<bool> login(String username, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/login'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'username': username, 'password': password},
+      );
 
-    print('🔐 Login Response Status: ${response.statusCode}');
-    print('📦 Login Response Body: ${response.body}');
+      print('🔐 Login Response Status: ${response.statusCode}');
+      print('📦 Login Response Body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      _token = data['access_token'];
-      userRole = data['role'];
-      currentUserName = data['full_name'];
-      currentUserId = data['user_id'] ?? username;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _token = data['access_token'];
+        userRole = data['role'];
+        currentUserName = data['full_name'];
+        currentUserId = data['user_id'] ?? username;
 
-      await _storage.write(key: 'auth_token', value: _token);
-      
-      print('✅ Login Success!');
-      print('👤 Role: $userRole');
-      print('📛 Name: $currentUserName');
-      print('🆔 ID: $currentUserId');
-      
-      return true;
+        await _storage.write(key: 'auth_token', value: _token);
+
+        print('✅ Login Success!');
+        print('👤 Role: $userRole');
+        print('📛 Name: $currentUserName');
+        print('🆔 ID: $currentUserId');
+
+        return true;
+      }
+
+      print('❌ Login Failed: ${response.body}');
+      return false;
+    } catch (e) {
+      print('🔥 Login Error: $e');
+      return false;
     }
-    
-    print('❌ Login Failed: ${response.body}');
-    return false;
-  } catch (e) {
-    print('🔥 Login Error: $e');
-    return false;
   }
-}
+
+  /// Registers a new Student account.
+  /// Returns a [RegistrationResult] with success flag and message.
+  static Future<RegistrationResult> registerStudent({
+    required String fullName,
+    required String regdNo,
+    required String rollNo,
+    required String semester,
+    required String contactNo,
+    required String email,
+    required String guardianName,
+    required String guardianContactNo,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/register/student'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'full_name': fullName,
+          'regd_no': regdNo,
+          'roll_no': rollNo,
+          'semester': semester,
+          'contact_no': contactNo,
+          'email': email,
+          'guardian_name': guardianName,
+          'guardian_contact_no': guardianContactNo,
+          'password': password,
+          'role': 'STUDENT',
+        }),
+      );
+
+      print('📝 Student Register Status: ${response.statusCode}');
+      print('📦 Student Register Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return RegistrationResult(success: true, message: 'Registration successful');
+      }
+
+      final body = jsonDecode(response.body);
+      return RegistrationResult(
+        success: false,
+        message: body['detail'] ?? 'Registration failed. Please try again.',
+      );
+    } catch (e) {
+      print('🔥 Student Register Error: $e');
+      return RegistrationResult(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Registers a new Faculty or HOD account.
+  /// Returns a [RegistrationResult] with success flag and message.
+  static Future<RegistrationResult> registerFaculty({
+    required String fullName,
+    required String facultyId,
+    required String role,         // 'Prof.' | 'Asst. Prof.' | 'Guest Faculty'
+    required String contactNo,
+    required String email,
+    required String education,
+    required String fieldsOfExpertise,
+    required String password,
+    required String accountRole,  // 'TEACHER' | 'HOD'
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/register/faculty'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'full_name': fullName,
+          'faculty_id': facultyId,
+          'designation': role,
+          'contact_no': contactNo,
+          'email': email,
+          'education': education,
+          'fields_of_expertise': fieldsOfExpertise,
+          'password': password,
+          'role': accountRole,    // sent as 'TEACHER' or 'HOD' to the backend
+        }),
+      );
+
+      print('📝 Faculty Register Status: ${response.statusCode}');
+      print('📦 Faculty Register Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return RegistrationResult(success: true, message: 'Registration successful');
+      }
+
+      final body = jsonDecode(response.body);
+      return RegistrationResult(
+        success: false,
+        message: body['detail'] ?? 'Registration failed. Please try again.',
+      );
+    } catch (e) {
+      print('🔥 Faculty Register Error: $e');
+      return RegistrationResult(success: false, message: 'Network error: $e');
+    }
+  }
+
   static Future<void> logout() async {
     _token = null;
     userRole = null;
@@ -65,12 +159,12 @@ class ApiService {
     await _storage.delete(key: 'auth_token');
   }
 
-  // --- ATTENDANCE & SCHEDULE METHODS ---
+  // ─────────────────────────────────────────────────────────────────
+  // ATTENDANCE & SCHEDULE METHODS
+  // ─────────────────────────────────────────────────────────────────
 
-  /// Fetches the weekly schedule for the logged-in teacher
-  /// (Merged from File 2)
   static Future<List<Map<String, dynamic>>> fetchTeacherSchedule() async {
-    final fid = currentUserId; 
+    final fid = currentUserId;
     if (fid == null) return [];
 
     try {
@@ -125,7 +219,9 @@ class ApiService {
     }
   }
 
-  // --- STUDENT STATS ---
+  // ─────────────────────────────────────────────────────────────────
+  // STUDENT STATS
+  // ─────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> fetchStudentStats(
       String studentId) async {
@@ -140,7 +236,9 @@ class ApiService {
     throw Exception('Failed to load stats');
   }
 
-  // --- MEDICAL METHODS ---
+  // ─────────────────────────────────────────────────────────────────
+  // MEDICAL METHODS
+  // ─────────────────────────────────────────────────────────────────
 
   static Future<String> submitMedical({
     required String studentRollNo,
@@ -152,7 +250,7 @@ class ApiService {
   }) async {
     var request = http.MultipartRequest(
         'POST', Uri.parse('${AppConfig.baseUrl}/api/medical/submit'));
-    
+
     if (_token != null) {
       request.headers['Authorization'] = 'Bearer $_token';
     }
@@ -178,8 +276,6 @@ class ApiService {
     throw Exception('Medical submit failed: ${response.body}');
   }
 
-  /// Fetches pending medical requests for HOD
-  /// (Kept from File 1: Includes new OCR and Reason fields)
   static Future<List<MedicalEntry>> fetchPendingMedical(
       String departmentId) async {
     final response = await http.get(
@@ -190,8 +286,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-
-      // UPDATED: Now maps the new fields required for Verification
       return data
           .map((r) => MedicalEntry(
                 requestId: r['request_id'],
@@ -200,8 +294,6 @@ class ApiService {
                 toDate: DateTime.parse(r['to_date']),
                 status: r['status'],
                 hodRemark: r['hod_remark'],
-
-                // --- NEW FIELDS (From File 1) ---
                 reason: r['reason'] ?? 'No reason provided',
                 documentPath: r['document_path'] ?? '',
                 ocrText: r['ocr_text'],
@@ -225,7 +317,9 @@ class ApiService {
     }
   }
 
-  // --- HELPERS ---
+  // ─────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────
 
   static Map<String, String> _getHeaders() {
     return {
@@ -233,4 +327,17 @@ class ApiService {
       if (_token != null) 'Authorization': 'Bearer $_token',
     };
   }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// REGISTRATION RESULT MODEL
+// ─────────────────────────────────────────────────────────────────
+
+/// Lightweight result wrapper returned by registration methods.
+/// Avoids throwing exceptions for expected failures (e.g. duplicate ID).
+class RegistrationResult {
+  final bool success;
+  final String message;
+
+  const RegistrationResult({required this.success, required this.message});
 }
