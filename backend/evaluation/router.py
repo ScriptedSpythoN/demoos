@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 import base64
-from openai import OpenAI
+# from openai import OpenAI
 from dotenv import load_dotenv
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
@@ -11,17 +11,17 @@ from typing import List
 from config import UPLOAD_DIR
 
 # --- SECURE CONFIGURATION ---
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# load_dotenv()
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not OPENAI_API_KEY:
-    print("FATAL ERROR: OPENAI_API_KEY not found in .env file.")
-    OPENAI_API_KEY = "MISSING"
+# if not OPENAI_API_KEY:
+#     print("FATAL ERROR: OPENAI_API_KEY not found in .env file.")
+#     OPENAI_API_KEY = "MISSING"
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+# client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Use GPT-4o-mini for cost-effective, high-quality vision
-MODEL_NAME = "gpt-4o-mini"
+# # Use GPT-4o-mini for cost-effective, high-quality vision
+# MODEL_NAME = "gpt-4o-mini"
 
 router = APIRouter(tags=["AI Evaluation"])
 

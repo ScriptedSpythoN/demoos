@@ -4,10 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
-import 'registration_screen.dart';
 import 'hod_dashboard_screen.dart';
 import 'student_dashboard_screen.dart';
 import 'teacher_dashboard_screen.dart';
+import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen>
   String _selectedRole = 'Student';
   final List<String> _roles = ['Student', 'Faculty', 'HOD'];
 
-  // Animation controllers
+  // Animation controllers — unchanged
   late AnimationController _orbController;
   late AnimationController _cardEntryController;
   late AnimationController _shakeController;
@@ -50,31 +50,30 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
 
     _orbController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 14),
+      vsync: this, duration: const Duration(seconds: 14),
     )..repeat();
 
     _cardEntryController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
+      vsync: this, duration: const Duration(milliseconds: 700),
     );
 
     _shakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
+      vsync: this, duration: const Duration(milliseconds: 500),
     );
 
     _glowPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      vsync: this, duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
     _cardFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _cardEntryController, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _cardEntryController,
+          curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
     );
 
-    _cardSlideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-      CurvedAnimation(parent: _cardEntryController, curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic)),
+    _cardSlideAnim = Tween<Offset>(
+        begin: const Offset(0, 0.08), end: Offset.zero).animate(
+      CurvedAnimation(parent: _cardEntryController,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic)),
     );
 
     _shakeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -85,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _glowPulseController, curve: Curves.easeInOut),
     );
 
-    // Start entry
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _cardEntryController.forward();
     });
@@ -102,20 +100,17 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  // ── Logic — unchanged ─────────────────────────────────────────
   void _handleLogin() async {
     if (_userController.text.isEmpty || _passController.text.isEmpty) {
       _triggerShake();
       _showError('Please fill in all fields');
       return;
     }
-
     setState(() => _isLoading = true);
-
     final success = await ApiService.login(
-      _userController.text.trim(),
-      _passController.text.trim(),
+      _userController.text.trim(), _passController.text.trim(),
     );
-
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -123,22 +118,17 @@ class _LoginScreenState extends State<LoginScreen>
       final role = ApiService.userRole ?? 'STUDENT';
       Widget next;
       switch (role) {
-        case 'HOD':
-          next = const HoDDashboardScreen(departmentId: 'CSE'); break;
-        case 'TEACHER':
-          next = const TeacherDashboardScreen(); break;
-        default:
-          next = const StudentDashboardScreen();
+        case 'HOD':     next = const HoDDashboardScreen(departmentId: 'CSE'); break;
+        case 'TEACHER': next = const TeacherDashboardScreen(); break;
+        default:        next = const StudentDashboardScreen();
       }
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => next,
           transitionsBuilder: (_, anim, __, child) => SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
             child: FadeTransition(opacity: anim, child: child),
           ),
           transitionDuration: const Duration(milliseconds: 500),
@@ -156,106 +146,89 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
-            const SizedBox(width: 10),
-            Expanded(child: Text(msg, style: const TextStyle(color: Colors.white))),
-          ],
-        ),
-        backgroundColor: AppTheme.accentPink.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
+        const SizedBox(width: 10),
+        Expanded(child: Text(msg, style: const TextStyle(color: Colors.white))),
+      ]),
+      backgroundColor: AppTheme.accentPink.withOpacity(0.92),
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      duration: const Duration(seconds: 4),
+    ));
   }
 
   void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Password reset link will be sent to your registered email'),
-        backgroundColor: AppTheme.accentBlue.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('Password reset link sent to your registered email'),
+      backgroundColor: AppTheme.accentBlue.withOpacity(0.92),
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ));
+  }
+
+  void _handleRegister() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => RegistrationScreen(role: _selectedRole),
+        transitionsBuilder: (_, anim, __, child) => SlideTransition(
+          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+              .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+          child: FadeTransition(opacity: anim, child: child),
+        ),
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
 
- void _handleRegister() {
-  Navigator.push(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (_, __, ___) =>
-          RegistrationScreen(role: _selectedRole),   // passes current role pill
-      transitionsBuilder: (_, anim, __, child) => SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(1, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-        child: FadeTransition(opacity: anim, child: child),
-      ),
-      transitionDuration: const Duration(milliseconds: 450),
-    ),
-  );
-}
-
+  // ── Build ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
-      body: Stack(
-        children: [
-          // Animated orb background
-          _buildOrbBackground(),
-          // Noise overlay
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.03,
-              child: Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/2/25/Abstract_noise.svg',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
-          // Main content
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                child: AnimatedBuilder(
-                  animation: _shakeAnim,
-                  builder: (context, child) {
-                    final shakeOffset = math.sin(_shakeAnim.value * math.pi * 6) *
-                        (_shakeAnim.value > 0 ? 10.0 : 0.0) *
-                        (1 - _shakeAnim.value);
-                    return Transform.translate(
-                      offset: Offset(shakeOffset, 0),
-                      child: child,
-                    );
-                  },
-                  child: FadeTransition(
-                    opacity: _cardFadeAnim,
-                    child: SlideTransition(
-                      position: _cardSlideAnim,
-                      child: _buildLoginCard(),
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        showOrb: false, // Custom orbs below
+        child: Stack(
+          children: [
+            // Animated orbs on top of gradient
+            _buildOrbBackground(),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                  child: AnimatedBuilder(
+                    animation: _shakeAnim,
+                    builder: (context, child) {
+                      final offset = math.sin(_shakeAnim.value * math.pi * 6) *
+                          (_shakeAnim.value > 0 ? 10.0 : 0.0) *
+                          (1 - _shakeAnim.value);
+                      return Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: child,
+                      );
+                    },
+                    child: FadeTransition(
+                      opacity: _cardFadeAnim,
+                      child: SlideTransition(
+                        position: _cardSlideAnim,
+                        child: _buildLoginCard(),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // ── Orb background ──────────────────────────────────────────────
+  // ── Orb background — adapted for light theme ──────────────────
   Widget _buildOrbBackground() {
     return Positioned.fill(
       child: AnimatedBuilder(
@@ -263,39 +236,31 @@ class _LoginScreenState extends State<LoginScreen>
         builder: (context, _) {
           final t = _orbController.value * 2 * math.pi;
           final size = MediaQuery.of(context).size;
-
           return Stack(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0A0A0F),
-                      Color(0xFF0D0D1A),
-                      Color(0xFF0E0E22),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-              // Orb 1 - Role accent
+              // Role-accent orb (top-left)
               Positioned(
-                left: -80 + 50 * math.sin(t * 0.6),
-                top: 60 + 80 * math.cos(t * 0.4),
-                child: _glowOrb(280, _roleAccent.withOpacity(0.22)),
+                left: -60 + 40 * math.sin(t * 0.6),
+                top: 40 + 60 * math.cos(t * 0.4),
+                child: _glowOrb(260, _roleAccent.withOpacity(0.18)),
               ),
-              // Orb 2 - Violet
+              // White orb (top-right) — matches image top-right glow
               Positioned(
-                right: -60 + 40 * math.cos(t * 0.5),
-                bottom: size.height * 0.35 + 60 * math.sin(t * 0.3),
-                child: _glowOrb(320, AppTheme.accentViolet.withOpacity(0.14)),
+                right: -40 + 30 * math.cos(t * 0.5),
+                top: -20 + 40 * math.sin(t * 0.35),
+                child: _glowOrb(220, Colors.white.withOpacity(0.55)),
               ),
-              // Orb 3 - Teal
+              // Blue orb (bottom)
               Positioned(
-                left: size.width * 0.3 + 30 * math.sin(t * 0.7),
-                bottom: 40 + 50 * math.cos(t * 0.5),
-                child: _glowOrb(200, AppTheme.accentTeal.withOpacity(0.10)),
+                left: size.width * 0.25 + 25 * math.sin(t * 0.7),
+                bottom: 30 + 40 * math.cos(t * 0.5),
+                child: _glowOrb(200, AppTheme.accentBlue.withOpacity(0.22)),
+              ),
+              // Violet accent (mid-right)
+              Positioned(
+                right: -30 + 20 * math.cos(t * 0.4),
+                top: size.height * 0.45 + 30 * math.sin(t * 0.6),
+                child: _glowOrb(160, AppTheme.accentViolet.withOpacity(0.12)),
               ),
             ],
           );
@@ -304,20 +269,15 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _glowOrb(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, Colors.transparent],
-        ),
-      ),
-    );
-  }
+  Widget _glowOrb(double size, Color color) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(colors: [color, Colors.transparent]),
+    ),
+  );
 
-  // ── Login card ──────────────────────────────────────────────────
+  // ── Login card — white frosted glass ─────────────────────────
   Widget _buildLoginCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
@@ -325,16 +285,19 @@ class _LoginScreenState extends State<LoginScreen>
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFFFFFFF).withOpacity(0.07),
+            color: Colors.white.withOpacity(0.65),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: const Color(0xFFFFFFFF).withOpacity(0.12),
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 40,
+                color: const Color(0xFF2B7DE9).withOpacity(0.10),
+                blurRadius: 48,
                 offset: const Offset(0, 16),
+              ),
+              BoxShadow(
+                color: Colors.white.withOpacity(0.80),
+                blurRadius: 1,
+                offset: const Offset(0, -1),
               ),
             ],
           ),
@@ -376,56 +339,50 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // ── Header ────────────────────────────────────────────────────
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Animated glow logo
         AnimatedBuilder(
           animation: _glowAnim,
           builder: (context, _) => Container(
-            width: 72,
-            height: 72,
+            width: 72, height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _roleAccent.withOpacity(0.12),
-              border: Border.all(color: _roleAccent.withOpacity(0.30), width: 1.5),
+              gradient: LinearGradient(
+                colors: [_roleAccent.withOpacity(0.20), _roleAccent.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: _roleAccent.withOpacity(0.40), width: 1.5),
               boxShadow: [
-                BoxShadow(
-                  color: _roleAccent.withOpacity(_glowAnim.value),
-                  blurRadius: 28,
-                ),
+                BoxShadow(color: _roleAccent.withOpacity(_glowAnim.value * 0.5), blurRadius: 28),
+                const BoxShadow(color: Colors.white, blurRadius: 1, offset: Offset(0, -1)),
               ],
             ),
             child: Icon(Icons.school_rounded, color: _roleAccent, size: 36),
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
+        Text(
           'Department Nuclei',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
-          ),
+          style: AppTheme.sora(fontSize: 26, fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary),
         ),
         const SizedBox(height: 6),
         Text(
           'Secure Login Portal',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppTheme.textPrimary.withOpacity(0.50),
-            fontSize: 13,
-            letterSpacing: 0.3,
-          ),
+          style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary,
+              letterSpacing: 0.3),
         ),
       ],
     );
   }
 
-  // ── Role selector pills ─────────────────────────────────────────
+  // ── Role selector ─────────────────────────────────────────────
   Widget _buildRoleSelector() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -434,9 +391,9 @@ class _LoginScreenState extends State<LoginScreen>
         child: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFFFFF).withOpacity(0.05),
+            color: const Color(0xFF1A6FE8).withOpacity(0.05),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withOpacity(0.60)),
           ),
           child: Row(
             children: _roles.map((role) => _buildRolePill(role)).toList(),
@@ -458,22 +415,22 @@ class _LoginScreenState extends State<LoginScreen>
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? accent.withOpacity(0.20) : Colors.transparent,
+            color: isSelected ? accent.withOpacity(0.14) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
-                ? Border.all(color: accent.withOpacity(0.50))
+                ? Border.all(color: accent.withOpacity(0.40))
                 : null,
             boxShadow: isSelected
-                ? [BoxShadow(color: accent.withOpacity(0.25), blurRadius: 12)]
+                ? [BoxShadow(color: accent.withOpacity(0.15), blurRadius: 10)]
                 : null,
           ),
           child: Text(
             role,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? accent : AppTheme.textPrimary.withOpacity(0.45),
+            style: AppTheme.dmSans(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? accent : AppTheme.textMuted,
               letterSpacing: 0.2,
             ),
           ),
@@ -490,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // ── Glass input field ───────────────────────────────────────────
+  // ── Input fields ──────────────────────────────────────────────
   Widget _buildInput({
     required TextEditingController controller,
     required String label,
@@ -513,11 +470,8 @@ class _LoginScreenState extends State<LoginScreen>
       accentColor: _roleAccent,
       suffix: IconButton(
         icon: Icon(
-          _isPasswordVisible
-              ? Icons.visibility_outlined
-              : Icons.visibility_off_outlined,
-          color: AppTheme.textPrimary.withOpacity(0.45),
-          size: 20,
+          _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+          color: AppTheme.textMuted, size: 20,
         ),
         onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
       ),
@@ -531,11 +485,7 @@ class _LoginScreenState extends State<LoginScreen>
         onTap: _handleForgotPassword,
         child: Text(
           'Forgot Password?',
-          style: TextStyle(
-            color: _roleAccent,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTheme.dmSans(fontSize: 13, color: _roleAccent, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -549,38 +499,23 @@ class _LoginScreenState extends State<LoginScreen>
         height: 54,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              _roleAccent,
-              _roleAccent.withOpacity(0.75),
-            ],
+            colors: [_roleAccent, Color.lerp(_roleAccent, const Color(0xFF0A4FBF), 0.3)!],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(50),
           boxShadow: [
-            BoxShadow(
-              color: _roleAccent.withOpacity(0.40),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
+            BoxShadow(color: _roleAccent.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 8)),
+            BoxShadow(color: Colors.white.withOpacity(0.40), blurRadius: 1, offset: const Offset(0, -1)),
           ],
         ),
         child: Center(
           child: _isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                )
-              : const Text(
-                  'LOGIN',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2.0,
-                  ),
-                ),
+              ? const SizedBox(width: 22, height: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+              : Text('LOGIN', style: AppTheme.dmSans(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: Colors.white, letterSpacing: 2.0)),
         ),
       ),
     );
@@ -589,24 +524,16 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(
-          child: Container(height: 1, color: const Color(0xFFFFFFFF).withOpacity(0.08)),
-        ),
+        Expanded(child: Container(height: 1,
+            color: const Color(0xFF1A6FE8).withOpacity(0.12))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            'OR',
-            style: TextStyle(
-              color: AppTheme.textPrimary.withOpacity(0.30),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.5,
-            ),
-          ),
+          child: Text('OR', style: AppTheme.dmSans(
+              fontSize: 11, color: AppTheme.textMuted,
+              fontWeight: FontWeight.w600, letterSpacing: 1.5)),
         ),
-        Expanded(
-          child: Container(height: 1, color: const Color(0xFFFFFFFF).withOpacity(0.08)),
-        ),
+        Expanded(child: Container(height: 1,
+            color: const Color(0xFF1A6FE8).withOpacity(0.12))),
       ],
     );
   }
@@ -615,30 +542,20 @@ class _LoginScreenState extends State<LoginScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          "Don't have an account?",
-          style: TextStyle(
-            color: AppTheme.textPrimary.withOpacity(0.50),
-            fontSize: 13,
-          ),
-        ),
+        Text("Don't have an account?",
+            style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary)),
         const SizedBox(width: 8),
         GestureDetector(
           onTap: _handleRegister,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
+              color: _roleAccent.withOpacity(0.10),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _roleAccent.withOpacity(0.50)),
+              border: Border.all(color: _roleAccent.withOpacity(0.40)),
             ),
-            child: Text(
-              'Register',
-              style: TextStyle(
-                color: _roleAccent,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Text('Register', style: AppTheme.dmSans(
+                fontSize: 13, color: _roleAccent, fontWeight: FontWeight.w700)),
           ),
         ),
       ],
@@ -646,7 +563,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-// ── Glass text field widget ───────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+//  GlassTextField — White-glass focus animation (light theme)
+// ─────────────────────────────────────────────────────────────────
 class _GlassTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
@@ -678,19 +597,11 @@ class _GlassTextFieldState extends State<_GlassTextField>
   void initState() {
     super.initState();
     _focusCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
+        vsync: this, duration: const Duration(milliseconds: 200));
     _borderGlow = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _focusCtrl, curve: Curves.easeOut),
-    );
-    _focusNode.addListener(() {
-      if (_focusNode.hasFocus) {
-        _focusCtrl.forward();
-      } else {
-        _focusCtrl.reverse();
-      }
-    });
+        CurvedAnimation(parent: _focusCtrl, curve: Curves.easeOut));
+    _focusNode.addListener(() =>
+        _focusNode.hasFocus ? _focusCtrl.forward() : _focusCtrl.reverse());
   }
 
   @override
@@ -704,74 +615,72 @@ class _GlassTextFieldState extends State<_GlassTextField>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _borderGlow,
-      builder: (context, child) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
+      builder: (context, _) => ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              // Light fill: white on white-blue bg — semi-transparent
+              color: Colors.white.withOpacity(0.60 + 0.10 * _borderGlow.value),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Color.lerp(
+                  Colors.white.withOpacity(0.70),
+                  widget.accentColor.withOpacity(0.70),
+                  _borderGlow.value,
+                )!,
+                width: 1.2 + _borderGlow.value * 0.5,
+              ),
+              boxShadow: [
+                if (_borderGlow.value > 0.1)
+                  BoxShadow(
+                    color: widget.accentColor.withOpacity(0.10 * _borderGlow.value),
+                    blurRadius: 14,
+                  ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.60),
+                  blurRadius: 1,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: widget.controller,
+              focusNode: _focusNode,
+              obscureText: widget.obscureText,
+              style: AppTheme.dmSans(
+                  fontSize: 15, fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                labelText: widget.label,
+                labelStyle: AppTheme.dmSans(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary.withOpacity(
+                      _borderGlow.value > 0.5 ? 0.80 : 0.45),
+                ),
+                floatingLabelStyle: AppTheme.dmSans(
+                    fontSize: 12, color: widget.accentColor,
+                    fontWeight: FontWeight.w600),
+                prefixIcon: Icon(
+                  widget.prefixIcon,
                   color: Color.lerp(
-                    const Color(0xFFFFFFFF).withOpacity(0.10),
-                    widget.accentColor.withOpacity(0.60),
+                    AppTheme.textMuted,
+                    widget.accentColor,
                     _borderGlow.value,
-                  )!,
-                  width: 1 + _borderGlow.value * 0.5,
+                  ),
+                  size: 20,
                 ),
-                boxShadow: [
-                  if (_borderGlow.value > 0.1)
-                    BoxShadow(
-                      color: widget.accentColor.withOpacity(0.12 * _borderGlow.value),
-                      blurRadius: 16,
-                    ),
-                ],
+                suffixIcon: widget.suffix,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 16),
               ),
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focusNode,
-                obscureText: widget.obscureText,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: InputDecoration(
-                  labelText: widget.label,
-                  labelStyle: TextStyle(
-                    color: AppTheme.textPrimary.withOpacity(
-                      _borderGlow.value > 0.5 ? 0.85 : 0.45,
-                    ),
-                    fontSize: 14,
-                  ),
-                  floatingLabelStyle: TextStyle(
-                    color: widget.accentColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  prefixIcon: Icon(
-                    widget.prefixIcon,
-                    color: Color.lerp(
-                      AppTheme.textPrimary.withOpacity(0.35),
-                      widget.accentColor,
-                      _borderGlow.value,
-                    ),
-                    size: 20,
-                  ),
-                  suffixIcon: widget.suffix,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 16,
-                  ),
-                ),
-                cursorColor: widget.accentColor,
-              ),
+              cursorColor: widget.accentColor,
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

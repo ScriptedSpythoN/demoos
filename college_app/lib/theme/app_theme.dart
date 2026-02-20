@@ -1,41 +1,71 @@
 // lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui';
 
 // ─────────────────────────────────────────────────────────────────
-//  AppTheme — Single source of truth for the entire design system
+//  AppTheme — White/Blue Glassmorphism Design System
+//  Visual Reference: Frosted glass panels on white-to-blue gradient
 // ─────────────────────────────────────────────────────────────────
 class AppTheme {
-  AppTheme._(); // non-instantiable
+  AppTheme._();
 
-  // ── Backgrounds ────────────────────────────────────────────────
-  static const Color bgPrimary   = Color(0xFF0A0A0F);
-  static const Color bgSecondary = Color(0xFF0D0D1A);
-  static const Color bgTertiary  = Color(0xFF12122A);
+  // ── Background gradient stops (white → soft blue → vivid blue) ─
+  static const Color bgWhite      = Color(0xFFFFFFFF);
+  static const Color bgSoftBlue   = Color(0xFFEAF4FF);
+  static const Color bgMidBlue    = Color(0xFFBFDEFF);
+  static const Color bgDeepBlue   = Color(0xFF6AADEE);
+  static const Color bgVividBlue  = Color(0xFF2B7DE9);
+
+  // ── Legacy aliases (keep backward compat) ──────────────────────
+  static const Color bgPrimary   = bgWhite;
+  static const Color bgSecondary = bgSoftBlue;
+  static const Color bgTertiary  = bgMidBlue;
 
   // ── Role accents ───────────────────────────────────────────────
-  static const Color accentBlue   = Color(0xFF4F8EF7); // Student
-  static const Color accentViolet = Color(0xFF8B5CF6); // HOD
-  static const Color accentTeal   = Color(0xFF2DD4BF); // Faculty
-  static const Color accentPink   = Color(0xFFEC4899); // Alerts / Medical
-  static const Color accentAmber  = Color(0xFFF59E0B); // Warnings / Pending
+  static const Color accentBlue   = Color(0xFF1A6FE8); // Student — vivid blue
+  static const Color accentViolet = Color(0xFF7C5CFC); // HOD — indigo-violet
+  static const Color accentTeal   = Color(0xFF0EB8A8); // Faculty — teal
+  static const Color accentPink   = Color(0xFFEA4C89); // Alerts / Medical
+  static const Color accentAmber  = Color(0xFFF5A623); // Warnings / Pending
 
-  // ── Text ───────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFF0F0FF);
-  // Getters because withValues() is a runtime call — cannot be const
-  static Color get textSecondary => const Color(0xFFF0F0FF).withValues(alpha: 0.55);
-  static Color get textMuted     => const Color(0xFFF0F0FF).withValues(alpha: 0.30);
+  // ── Text (dark on light background) ───────────────────────────
+  static const Color textPrimary = Color(0xFF0D1B3E);
+  static Color get textSecondary => const Color(0xFF0D1B3E).withOpacity(0.55);
+  static Color get textMuted     => const Color(0xFF0D1B3E).withOpacity(0.30);
 
-  // ── Glass surface colours ──────────────────────────────────────
-  static Color get glassFill   => const Color(0xFFFFFFFF).withValues(alpha: 0.07);
-  static Color get glassFillHi => const Color(0xFFFFFFFF).withValues(alpha: 0.10);
-  static Color get glassBorder => const Color(0xFFFFFFFF).withValues(alpha: 0.10);
+  // ── Glass surface — white frosted panels ──────────────────────
+  static Color get glassFill    => const Color(0xFFFFFFFF).withOpacity(0.55);
+  static Color get glassFillHi  => const Color(0xFFFFFFFF).withOpacity(0.75);
+  static Color get glassBorder  => const Color(0xFFFFFFFF).withOpacity(0.70);
+  static Color get glassShadow  => const Color(0xFF2B7DE9).withOpacity(0.08);
 
   // ── Status colours ─────────────────────────────────────────────
-  static const Color statusPending  = Color(0xFFF59E0B);
-  static const Color statusAccepted = Color(0xFF2DD4BF);
-  static const Color statusRejected = Color(0xFFEC4899);
+  static const Color statusPending  = Color(0xFFF5A623);
+  static const Color statusAccepted = Color(0xFF0EB8A8);
+  static const Color statusRejected = Color(0xFFEA4C89);
+
+  // ─────────────────────────────────────────────────────────────
+  //  Full-screen background gradient widget
+  // ─────────────────────────────────────────────────────────────
+  static Widget background({Widget? child}) => Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Color(0xFFFFFFFF),
+          Color(0xFFEBF4FF),
+          Color(0xFFBDD8FF),
+          Color(0xFF89BFFF),
+          Color(0xFF4A9EFF),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        stops: [0.0, 0.25, 0.55, 0.80, 1.0],
+      ),
+    ),
+    child: child,
+  );
 
   // ─────────────────────────────────────────────────────────────
   //  Role helpers
@@ -49,55 +79,51 @@ class AppTheme {
   }
 
   static Color glowForRole(String? role) =>
-      accentForRole(role).withValues(alpha: 0.35);
+      accentForRole(role).withOpacity(0.20);
 
   // ─────────────────────────────────────────────────────────────
   //  BoxDecoration helpers
   // ─────────────────────────────────────────────────────────────
-
-  /// Standard glass card decoration.
-  /// Optionally accepts [glowColor] for role-specific glow shadow.
   static BoxDecoration glassCard({
     double radius = 20,
     Color? borderColor,
     Color? glowColor,
+    Color? fillColor,
   }) =>
       BoxDecoration(
-        color: const Color(0xFFFFFFFF).withValues(alpha: 0.07),
+        color: fillColor ?? const Color(0xFFFFFFFF).withOpacity(0.55),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: borderColor ?? const Color(0xFFFFFFFF).withValues(alpha: 0.10),
-          width: 1,
+          color: borderColor ?? const Color(0xFFFFFFFF).withOpacity(0.75),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.40),
+            color: const Color(0xFF2B7DE9).withOpacity(0.08),
             blurRadius: 32,
             offset: const Offset(0, 8),
           ),
-          // Inset top-highlight simulation
           BoxShadow(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.04),
+            color: const Color(0xFFFFFFFF).withOpacity(0.80),
             blurRadius: 1,
             offset: const Offset(0, 1),
           ),
           if (glowColor != null)
             BoxShadow(
-              color: glowColor,
+              color: glowColor.withOpacity(0.15),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
         ],
       );
 
-  /// Status-coloured pill badge decoration.
   static BoxDecoration statusBadgeDecor(String status) {
     final c = statusColor(status);
     return BoxDecoration(
-      color: c.withValues(alpha: 0.15),
+      color: c.withOpacity(0.12),
       borderRadius: BorderRadius.circular(50),
-      border: Border.all(color: c.withValues(alpha: 0.40)),
-      boxShadow: [BoxShadow(color: c.withValues(alpha: 0.25), blurRadius: 8)],
+      border: Border.all(color: c.withOpacity(0.35)),
+      boxShadow: [BoxShadow(color: c.withOpacity(0.15), blurRadius: 8)],
     );
   }
 
@@ -116,19 +142,14 @@ class AppTheme {
     }
   }
 
-  /// Returns a capitalised display label — e.g. "PENDING" → "Pending"
   static String statusLabel(String status) {
     final s = status.toLowerCase();
     return s[0].toUpperCase() + s.substring(1);
   }
 
   // ─────────────────────────────────────────────────────────────
-  //  Typography — Google Fonts helpers
-  //  Always use these instead of hard-coding fontFamily strings.
+  //  Typography
   // ─────────────────────────────────────────────────────────────
-
-  /// Sora — screen titles, hero numbers, display text.
-  /// letterSpacing defaults to −0.02 em (spec).
   static TextStyle sora({
     double fontSize = 16,
     FontWeight fontWeight = FontWeight.w600,
@@ -146,7 +167,6 @@ class AppTheme {
         decoration: decoration,
       );
 
-  /// DM Sans — body copy, labels, subtitles, buttons.
   static TextStyle dmSans({
     double fontSize = 14,
     FontWeight fontWeight = FontWeight.w400,
@@ -166,7 +186,6 @@ class AppTheme {
         fontStyle: fontStyle,
       );
 
-  /// JetBrains Mono — attendance %, CGPA, time displays, counters.
   static TextStyle mono({
     double fontSize = 14,
     FontWeight fontWeight = FontWeight.w600,
@@ -181,7 +200,7 @@ class AppTheme {
       );
 
   // ─────────────────────────────────────────────────────────────
-  //  Page entry transition (use in Navigator.push)
+  //  Page transition
   // ─────────────────────────────────────────────────────────────
   static PageRouteBuilder<T> slideRoute<T>(Widget page) =>
       PageRouteBuilder<T>(
@@ -190,9 +209,7 @@ class AppTheme {
           position: Tween<Offset>(
             begin: const Offset(1, 0),
             end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-          ),
+          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
           child: FadeTransition(
             opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
               CurvedAnimation(
@@ -207,15 +224,15 @@ class AppTheme {
       );
 
   // ─────────────────────────────────────────────────────────────
-  //  MaterialApp ThemeData
+  //  MaterialApp ThemeData — LIGHT theme for white/blue system
   // ─────────────────────────────────────────────────────────────
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: bgPrimary,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: Colors.transparent,
       colorScheme: const ColorScheme(
-        brightness:    Brightness.dark,
+        brightness:    Brightness.light,
         primary:       accentBlue,
         onPrimary:     Colors.white,
         secondary:     accentViolet,
@@ -224,13 +241,12 @@ class AppTheme {
         onTertiary:    Colors.white,
         error:         accentPink,
         onError:       Colors.white,
-        surface:       bgSecondary,
+        surface:       bgSoftBlue,
         onSurface:     textPrimary,
       ),
     );
 
     return base.copyWith(
-      // ── Global text theme ─────────────────────────────────────
       textTheme: GoogleFonts.dmSansTextTheme(base.textTheme).copyWith(
         displayLarge:   GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w700),
         displayMedium:  GoogleFonts.sora(color: textPrimary, fontWeight: FontWeight.w700),
@@ -249,13 +265,13 @@ class AppTheme {
         labelSmall:     GoogleFonts.dmSans(color: textPrimary, fontWeight: FontWeight.w500),
       ),
 
-      // ── AppBar ────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
-        backgroundColor: bgPrimary,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         foregroundColor: textPrimary,
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: GoogleFonts.sora(
           color: textPrimary,
           fontSize: 18,
@@ -264,27 +280,19 @@ class AppTheme {
         ),
       ),
 
-      // ── Dialog ────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
-        backgroundColor: bgSecondary,
+        backgroundColor: const Color(0xFFFFFFFF).withOpacity(0.85),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         titleTextStyle: GoogleFonts.sora(
-          color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
+          color: textPrimary, fontSize: 18, fontWeight: FontWeight.w700,
         ),
         contentTextStyle: GoogleFonts.dmSans(
-          color: textPrimary,
-          fontSize: 14,
-          height: 1.5,
+          color: textPrimary, fontSize: 14, height: 1.5,
         ),
       ),
 
-      // ── Bottom sheet ──────────────────────────────────────────
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -293,51 +301,36 @@ class AppTheme {
         modalBackgroundColor: Colors.transparent,
       ),
 
-      // ── SnackBar ──────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: bgSecondary,
+        backgroundColor: const Color(0xFFFFFFFF).withOpacity(0.90),
         elevation: 0,
-        contentTextStyle: GoogleFonts.dmSans(
-          color: textPrimary,
-          fontSize: 14,
-        ),
+        contentTextStyle: GoogleFonts.dmSans(color: textPrimary, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.08),
-          ),
+          side: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.80)),
         ),
         behavior: SnackBarBehavior.floating,
       ),
 
-      // ── Input decoration ──────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFFFFFFF).withValues(alpha: 0.06),
+        fillColor: const Color(0xFFFFFFFF).withOpacity(0.60),
         labelStyle: GoogleFonts.dmSans(
-          color: const Color(0xFFF0F0FF).withValues(alpha: 0.50),
-          fontSize: 14,
+          color: const Color(0xFF0D1B3E).withOpacity(0.50), fontSize: 14,
         ),
         floatingLabelStyle: GoogleFonts.dmSans(
-          color: accentBlue,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          color: accentBlue, fontSize: 12, fontWeight: FontWeight.w600,
         ),
         hintStyle: GoogleFonts.dmSans(
-          color: const Color(0xFFF0F0FF).withValues(alpha: 0.30),
-          fontSize: 14,
+          color: const Color(0xFF0D1B3E).withOpacity(0.30), fontSize: 14,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.10),
-          ),
+          borderSide: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.70)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: const Color(0xFFFFFFFF).withValues(alpha: 0.10),
-          ),
+          borderSide: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.70)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -351,31 +344,119 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: accentPink, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
 
-      // ── Progress indicator ────────────────────────────────────
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: accentBlue,
         linearTrackColor: Colors.transparent,
         circularTrackColor: Colors.transparent,
       ),
 
-      // ── Divider ───────────────────────────────────────────────
       dividerTheme: DividerThemeData(
-        color: const Color(0xFFFFFFFF).withValues(alpha: 0.08),
+        color: const Color(0xFF1A6FE8).withOpacity(0.10),
         thickness: 1,
         space: 1,
+      ),
+    );
+  }
+
+  // Keep darkTheme for backward compat (returns lightTheme now)
+  static ThemeData get darkTheme => lightTheme;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  AppBackground — Persistent gradient background scaffold
+// ─────────────────────────────────────────────────────────────────
+class AppBackground extends StatelessWidget {
+  final Widget child;
+  final bool showOrb;
+  const AppBackground({super.key, required this.child, this.showOrb = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFFFFFFF),
+            Color(0xFFEBF4FF),
+            Color(0xFFBDD8FF),
+            Color(0xFF89BFFF),
+            Color(0xFF4A9EFF),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.0, 0.25, 0.55, 0.80, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          if (showOrb) ...[
+            // Top-left white orb
+            Positioned(
+              top: -80,
+              left: -60,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.70),
+                      Colors.white.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Bottom-right blue orb
+            Positioned(
+              bottom: -60,
+              right: -40,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF2B7DE9).withOpacity(0.35),
+                      const Color(0xFF2B7DE9).withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Mid-page accent orb
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.4,
+              right: -30,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF7C5CFC).withOpacity(0.15),
+                      const Color(0xFF7C5CFC).withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          child,
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  GlassCard — Reusable glassmorphism container widget
+//  GlassCard — White frosted glassmorphism panel
 // ─────────────────────────────────────────────────────────────────
 class GlassCard extends StatelessWidget {
   final Widget child;
@@ -386,6 +467,7 @@ class GlassCard extends StatelessWidget {
   final Color? borderColor;
   final Color? color;
   final Color? glowColor;
+  final VoidCallback? onTap;
 
   const GlassCard({
     super.key,
@@ -397,43 +479,47 @@ class GlassCard extends StatelessWidget {
     this.borderColor,
     this.color,
     this.glowColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: sigmaX, sigmaY: sigmaY),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: color ?? const Color(0xFFFFFFFF).withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color: borderColor ?? const Color(0xFFFFFFFF).withValues(alpha: 0.10),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.40),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: sigmaX, sigmaY: sigmaY),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: color ?? const Color(0xFFFFFFFF).withOpacity(0.55),
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: borderColor ?? const Color(0xFFFFFFFF).withOpacity(0.75),
+                width: 1.2,
               ),
-              BoxShadow(
-                color: const Color(0xFFFFFFFF).withValues(alpha: 0.04),
-                blurRadius: 1,
-                offset: const Offset(0, 1),
-              ),
-              if (glowColor != null)
+              boxShadow: [
                 BoxShadow(
-                  color: glowColor!,
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFF2B7DE9).withOpacity(0.08),
+                  blurRadius: 32,
+                  offset: const Offset(0, 8),
                 ),
-            ],
+                BoxShadow(
+                  color: const Color(0xFFFFFFFF).withOpacity(0.90),
+                  blurRadius: 1,
+                  offset: const Offset(0, 1),
+                ),
+                if (glowColor != null)
+                  BoxShadow(
+                    color: glowColor!.withOpacity(0.18),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+              ],
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
     );
@@ -441,15 +527,123 @@ class GlassCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  StaggerEntry — Staggered fade + slide-up card entry animation
-//  Each card enters 80 ms after the previous one (design spec).
+//  GlassNavBar — Bottom navigation with glassmorphism
+// ─────────────────────────────────────────────────────────────────
+class GlassNavBar extends StatelessWidget {
+  final int currentIndex;
+  final List<GlassNavItem> items;
+  final ValueChanged<int> onTap;
+  final Color accentColor;
+
+  const GlassNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.items,
+    required this.onTap,
+    this.accentColor = AppTheme.accentBlue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF).withOpacity(0.70),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: const Color(0xFFFFFFFF).withOpacity(0.85),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2B7DE9).withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: items.asMap().entries.map((entry) {
+                final i = entry.key;
+                final item = entry.value;
+                final selected = i == currentIndex;
+                return GestureDetector(
+                  onTap: () => onTap(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? accentColor.withOpacity(0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedScale(
+                          scale: selected ? 1.12 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            selected ? item.activeIcon : item.icon,
+                            color: selected
+                                ? accentColor
+                                : AppTheme.textPrimary.withOpacity(0.35),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: AppTheme.dmSans(
+                            fontSize: 10,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                            color: selected
+                                ? accentColor
+                                : AppTheme.textPrimary.withOpacity(0.35),
+                          ),
+                          child: Text(item.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlassNavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const GlassNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  StaggerEntry
 // ─────────────────────────────────────────────────────────────────
 class StaggerEntry extends StatelessWidget {
   final Widget child;
   final Animation<double> parent;
   final int index;
-
-  /// Gap between successive cards. 0.08 = ~80 ms at 1 s controller.
   final double interval;
 
   const StaggerEntry({
@@ -466,20 +660,15 @@ class StaggerEntry extends StatelessWidget {
     final double end   = (start + 0.35).clamp(0.0, 1.0);
 
     final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: parent,
-        curve: Interval(start, end, curve: Curves.easeOut),
-      ),
+      CurvedAnimation(parent: parent, curve: Interval(start, end, curve: Curves.easeOut)),
     );
     final slide = Tween<Offset>(
-      begin: const Offset(0, 0.06), // translateY(~24px) → 0
+      begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: parent,
-        curve: Interval(start, end, curve: Curves.easeOutCubic),
-      ),
-    );
+    ).animate(CurvedAnimation(
+      parent: parent,
+      curve: Interval(start, end, curve: Curves.easeOutCubic),
+    ));
 
     return FadeTransition(
       opacity: fade,
@@ -489,7 +678,7 @@ class StaggerEntry extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  GlowButton — Full-width pill CTA with press-glow animation
+//  GlowButton — Blue gradient pill CTA
 // ─────────────────────────────────────────────────────────────────
 class GlowButton extends StatefulWidget {
   final String label;
@@ -523,26 +712,20 @@ class _GlowButtonState extends State<GlowButton>
   void initState() {
     super.initState();
     _pressCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
+      vsync: this, duration: const Duration(milliseconds: 150),
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut),
-    );
-    _glowAnim = Tween<double>(begin: 0.35, end: 0.65).animate(
-      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.96)
+        .animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut));
+    _glowAnim = Tween<double>(begin: 0.25, end: 0.50)
+        .animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut));
   }
 
   @override
-  void dispose() {
-    _pressCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _pressCtrl.dispose(); super.dispose(); }
 
-  void _down(TapDownDetails _)  { _pressCtrl.forward(); }
-  void _up(TapUpDetails _)      { _pressCtrl.reverse(); widget.onPressed?.call(); }
-  void _cancel()                 { _pressCtrl.reverse(); }
+  void _down(TapDownDetails _) { _pressCtrl.forward(); }
+  void _up(TapUpDetails _)    { _pressCtrl.reverse(); widget.onPressed?.call(); }
+  void _cancel()              { _pressCtrl.reverse(); }
 
   @override
   Widget build(BuildContext context) {
@@ -563,26 +746,29 @@ class _GlowButtonState extends State<GlowButton>
               gradient: LinearGradient(
                 colors: disabled
                     ? [
-                        const Color(0xFFFFFFFF).withValues(alpha: 0.12),
-                        const Color(0xFFFFFFFF).withValues(alpha: 0.08),
+                        const Color(0xFF1A6FE8).withOpacity(0.20),
+                        const Color(0xFF1A6FE8).withOpacity(0.10),
                       ]
                     : [
                         widget.accent,
-                        widget.accent.withValues(alpha: 0.75),
+                        Color.lerp(widget.accent, const Color(0xFF0A4FBF), 0.3)!,
                       ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(50),
-              boxShadow: disabled
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: widget.accent.withValues(alpha: _glowAnim.value),
-                        blurRadius: _glowAnim.value > 0.45 ? 28 : 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+              boxShadow: disabled ? [] : [
+                BoxShadow(
+                  color: widget.accent.withOpacity(_glowAnim.value),
+                  blurRadius: _glowAnim.value > 0.35 ? 24 : 14,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.30),
+                  blurRadius: 1,
+                  offset: const Offset(0, -1),
+                ),
+              ],
             ),
             child: child,
           ),
@@ -590,20 +776,15 @@ class _GlowButtonState extends State<GlowButton>
         child: Center(
           child: widget.isLoading
               ? const SizedBox(
-                  width: 22,
-                  height: 22,
+                  width: 22, height: 22,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
+                    color: Colors.white, strokeWidth: 2.5,
                   ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (widget.icon != null) ...[
-                      widget.icon!,
-                      const SizedBox(width: 8),
-                    ],
+                    if (widget.icon != null) ...[widget.icon!, const SizedBox(width: 8)],
                     Text(
                       widget.label,
                       style: AppTheme.dmSans(
@@ -622,12 +803,11 @@ class _GlowButtonState extends State<GlowButton>
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  StatusBadge — PENDING / APPROVED / REJECTED pill
+//  StatusBadge
 // ─────────────────────────────────────────────────────────────────
 class StatusBadge extends StatelessWidget {
   final String status;
   final double fontSize;
-
   const StatusBadge(this.status, {super.key, this.fontSize = 11});
 
   @override
@@ -649,11 +829,10 @@ class StatusBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  RoleBadge — STUDENT / FACULTY / HOD coloured chip
+//  RoleBadge
 // ─────────────────────────────────────────────────────────────────
 class RoleBadge extends StatelessWidget {
   final String role;
-
   const RoleBadge(this.role, {super.key});
 
   @override
@@ -662,17 +841,15 @@ class RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.30)),
+        border: Border.all(color: color.withOpacity(0.30)),
       ),
       child: Text(
         role.toUpperCase(),
         style: AppTheme.dmSans(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: color,
-          letterSpacing: 1.2,
+          fontSize: 10, fontWeight: FontWeight.w800,
+          color: color, letterSpacing: 1.2,
         ),
       ),
     );
@@ -680,7 +857,7 @@ class RoleBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  ShimmerBox — Animated loading skeleton block
+//  ShimmerBox — Adapted for light background
 // ─────────────────────────────────────────────────────────────────
 class ShimmerBox extends StatefulWidget {
   final double width;
@@ -707,19 +884,14 @@ class _ShimmerBoxState extends State<ShimmerBox>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      vsync: this, duration: const Duration(milliseconds: 1100),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.03, end: 0.10).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(begin: 0.15, end: 0.35)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -729,7 +901,7 @@ class _ShimmerBoxState extends State<ShimmerBox>
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: _anim.value),
+          color: const Color(0xFF2B7DE9).withOpacity(_anim.value),
           borderRadius: BorderRadius.circular(widget.borderRadius),
         ),
       ),
