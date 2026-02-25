@@ -1,5 +1,5 @@
 class AppConfig {
   // Use your computer's IP address here for physical device testing
   // Use 'http://10.0.2.2:8000' for Android Emulator
-  static const String baseUrl = 'http://10.147.65.80:8000';
+  static const String baseUrl = 'http://10.114.50.80:8000';
 }

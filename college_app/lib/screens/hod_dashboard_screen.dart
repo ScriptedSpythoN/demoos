@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../models/medical_entry.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_drawer.dart';
+import '../widgets/dashboard_top_bar.dart';
 import 'medical_detail_screen.dart';
 import 'login_screen.dart';
 
@@ -22,24 +24,48 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen> {
   int _currentTab = 0;
 
   static const _navItems = [
-    GlassNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    GlassNavItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Classroom'),
-    GlassNavItem(icon: Icons.campaign_outlined, activeIcon: Icons.campaign_rounded, label: 'Notices'),
-    GlassNavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
+    GlassNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home'),
+    GlassNavItem(
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book_rounded,
+        label: 'Classroom'),
+    GlassNavItem(
+        icon: Icons.campaign_outlined,
+        activeIcon: Icons.campaign_rounded,
+        label: 'Notices'),
+    GlassNavItem(
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: 'Profile'),
   ];
 
   void _logout() async {
     final nav = Navigator.of(context);
     await ApiService.logout();
     if (!mounted) return;
-    nav.pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    nav.pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
+    final name = ApiService.currentUserName ?? 'HOD';
+    final userId = ApiService.currentUserId ?? '';
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
+      // ── Drawer ───────────────────────────────────────────────
+      drawer: AppDrawer(
+        userName: name,
+        userId: userId,
+        role: 'HOD',
+        accentColor: AppTheme.accentViolet,
+        onLogout: _logout,
+      ),
       body: AppBackground(
         child: SafeArea(
           bottom: false,
@@ -50,11 +76,18 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen> {
                 children: [
                   _HoDHomeTab(departmentId: widget.departmentId),
                   _HoDClassroomTab(departmentId: widget.departmentId),
-                  _HoDAnnouncementsTab(departmentId: widget.departmentId),
-                  _HoDProfileTab(departmentId: widget.departmentId, onLogout: _logout),
+                  _HoDAnnouncementsTab(
+                      departmentId: widget.departmentId),
+                  _HoDProfileTab(
+                      departmentId: widget.departmentId,
+                      onLogout: _logout),
                 ],
               ),
-              _HoDTopBar(departmentId: widget.departmentId, onLogout: _logout),
+              // ── New three-point top bar ─────────────────────
+              DashboardTopBar(
+                accentColor: AppTheme.accentViolet,
+                notificationCount: 5,
+              ),
             ],
           ),
         ),
@@ -64,68 +97,6 @@ class _HoDDashboardScreenState extends State<HoDDashboardScreen> {
         items: _navItems,
         accentColor: AppTheme.accentViolet,
         onTap: (i) => setState(() => _currentTab = i),
-      ),
-    );
-  }
-}
-
-// ── Top Bar ───────────────────────────────────────────────────────
-class _HoDTopBar extends StatelessWidget {
-  final String departmentId;
-  final VoidCallback onLogout;
-  const _HoDTopBar({required this.departmentId, required this.onLogout});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: 0, left: 0, right: 0,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Row(
-          children: [
-            // Avatar
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  AppTheme.accentViolet, AppTheme.accentViolet.withOpacity(0.7),
-                ]),
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: AppTheme.accentViolet.withOpacity(0.30), blurRadius: 12)],
-                border: Border.all(color: Colors.white.withOpacity(0.60), width: 1.5),
-              ),
-              child: const Center(child: Icon(Icons.admin_panel_settings_rounded,
-                  color: Colors.white, size: 20)),
-            ),
-            const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('HOD Dashboard', style: AppTheme.dmSans(
-                  fontSize: 11, color: AppTheme.accentViolet, fontWeight: FontWeight.w600)),
-              Text(departmentId, style: AppTheme.sora(
-                  fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
-            ]),
-            const Spacer(),
-            GestureDetector(
-              onTap: onLogout,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.70)),
-                    ),
-                    child: Icon(Icons.logout_rounded,
-                        color: AppTheme.textSecondary, size: 18),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -152,19 +123,28 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
   void initState() {
     super.initState();
     _staggerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800))..forward();
+        vsync: this,
+        duration: const Duration(milliseconds: 800))
+      ..forward();
     _loadData();
   }
 
   @override
-  void dispose() { _staggerCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _staggerCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _loadData() async {
     setState(() => isLoading = true);
     try {
-      final requests = await ApiService.fetchPendingMedical(widget.departmentId);
+      final requests =
+          await ApiService.fetchPendingMedical(widget.departmentId);
       if (!mounted) return;
-      setState(() { pendingRequests = requests; isLoading = false; });
+      setState(() {
+        pendingRequests = requests;
+        isLoading = false;
+      });
       _staggerCtrl.reset();
       _staggerCtrl.forward();
     } catch (e) {
@@ -174,7 +154,8 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         content: Text('Error: $e'),
         backgroundColor: AppTheme.accentPink.withOpacity(0.90),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ));
     }
   }
@@ -186,41 +167,59 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
       backgroundColor: Colors.white,
       onRefresh: _loadData,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(16, 80, 16, 110),
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 68, 16, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            StaggerEntry(parent: _staggerCtrl, index: 0, child: _buildStatsRow()),
+            StaggerEntry(
+                parent: _staggerCtrl,
+                index: 0,
+                child: _buildStatsRow()),
             const SizedBox(height: 12),
-            StaggerEntry(parent: _staggerCtrl, index: 1, child: _buildScheduleCard()),
+            StaggerEntry(
+                parent: _staggerCtrl,
+                index: 1,
+                child: _buildScheduleCard()),
             const SizedBox(height: 12),
-            StaggerEntry(parent: _staggerCtrl, index: 2, child: _buildAttendanceOverview()),
+            StaggerEntry(
+                parent: _staggerCtrl,
+                index: 2,
+                child: _buildAttendanceOverview()),
             const SizedBox(height: 12),
-            StaggerEntry(parent: _staggerCtrl, index: 3, child: _buildMedicalSection()),
+            StaggerEntry(
+                parent: _staggerCtrl,
+                index: 3,
+                child: _buildMedicalSection()),
           ],
         ),
       ),
     );
   }
 
-  // ── Stats row ─────────────────────────────────────────────────
   Widget _buildStatsRow() {
-    final flagged = pendingRequests.where((r) => r.ocrStatus == 'MISMATCH').length;
+    final flagged =
+        pendingRequests.where((r) => r.ocrStatus == 'MISMATCH').length;
     return Row(
       children: [
-        _statCard('${isLoading ? '—' : pendingRequests.length}', 'Awaiting',
-            Icons.pending_actions_rounded, AppTheme.accentAmber),
+        _statCard(
+            '${isLoading ? '—' : pendingRequests.length}',
+            'Awaiting',
+            Icons.pending_actions_rounded,
+            AppTheme.accentAmber),
         const SizedBox(width: 10),
         _statCard('${isLoading ? '—' : flagged}', 'AI Flagged',
             Icons.smart_toy_rounded, AppTheme.accentPink),
         const SizedBox(width: 10),
-        _statCard('0', 'Reviewed', Icons.check_circle_outline_rounded, AppTheme.accentTeal),
+        _statCard('0', 'Reviewed',
+            Icons.check_circle_outline_rounded, AppTheme.accentTeal),
       ],
     );
   }
 
-  Widget _statCard(String value, String label, IconData icon, Color color) {
+  Widget _statCard(
+      String value, String label, IconData icon, Color color) {
     return Expanded(
       child: GlassCard(
         padding: const EdgeInsets.all(14),
@@ -229,26 +228,46 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(height: 8),
-          Text(value, style: AppTheme.mono(fontSize: 22, color: color, fontWeight: FontWeight.w800)),
-          Text(label, style: AppTheme.dmSans(fontSize: 11, color: AppTheme.textMuted,
-              fontWeight: FontWeight.w500)),
+          Text(value,
+              style: AppTheme.mono(
+                  fontSize: 22, color: color, fontWeight: FontWeight.w800)),
+          Text(label,
+              style: AppTheme.dmSans(
+                  fontSize: 11,
+                  color: AppTheme.textMuted,
+                  fontWeight: FontWeight.w500)),
         ]),
       ),
     );
   }
 
-  // ── Schedule overview ─────────────────────────────────────────
   Widget _buildScheduleCard() {
     final classes = [
-      {'subject': 'Data Structures', 'code': 'DS', 'time': '10:00', 'section': 'CS-A'},
-      {'subject': 'Theory of Computation', 'code': 'TOC', 'time': '12:00', 'section': 'CS-B'},
-      {'subject': 'Software Engineering', 'code': 'SE', 'time': '15:00', 'section': 'CS-A'},
+      {
+        'subject': 'Data Structures',
+        'code': 'DS',
+        'time': '10:00',
+        'section': 'CS-A'
+      },
+      {
+        'subject': 'Theory of Computation',
+        'code': 'TOC',
+        'time': '12:00',
+        'section': 'CS-B'
+      },
+      {
+        'subject': 'Software Engineering',
+        'code': 'SE',
+        'time': '15:00',
+        'section': 'CS-A'
+      },
     ];
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionHeader(Icons.calendar_today_rounded, "Department Schedule", AppTheme.accentViolet),
+        _sectionHeader(Icons.calendar_today_rounded, "Department Schedule",
+            AppTheme.accentViolet),
         const SizedBox(height: 12),
         ...classes.map((c) => _scheduleRow(c)).toList(),
       ]),
@@ -267,20 +286,31 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
             decoration: BoxDecoration(
               color: AppTheme.accentViolet.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.accentViolet.withOpacity(0.12)),
+              border: Border.all(
+                  color: AppTheme.accentViolet.withOpacity(0.12)),
             ),
             child: Row(children: [
-              Text(c['time'], style: AppTheme.mono(
-                  fontSize: 12, color: AppTheme.accentViolet, fontWeight: FontWeight.w700)),
+              Text(c['time'],
+                  style: AppTheme.mono(
+                      fontSize: 12,
+                      color: AppTheme.accentViolet,
+                      fontWeight: FontWeight.w700)),
               const SizedBox(width: 14),
-              Expanded(child: Text(c['subject'], style: AppTheme.dmSans(
-                  fontSize: 13, fontWeight: FontWeight.w600))),
+              Expanded(
+                  child: Text(c['subject'],
+                      style: AppTheme.dmSans(
+                          fontSize: 13, fontWeight: FontWeight.w600))),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: AppTheme.accentViolet.withOpacity(0.10),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                    color: AppTheme.accentViolet.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(8)),
-                child: Text(c['section'], style: AppTheme.dmSans(
-                    fontSize: 10, color: AppTheme.accentViolet, fontWeight: FontWeight.w600)),
+                child: Text(c['section'],
+                    style: AppTheme.dmSans(
+                        fontSize: 10,
+                        color: AppTheme.accentViolet,
+                        fontWeight: FontWeight.w600)),
               ),
             ]),
           ),
@@ -289,7 +319,6 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     );
   }
 
-  // ── Attendance overview ───────────────────────────────────────
   Widget _buildAttendanceOverview() {
     final sections = [
       {'section': 'CS-A', 'avg': 82.5, 'students': 60},
@@ -300,57 +329,79 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionHeader(Icons.bar_chart_rounded, 'Attendance Overview', AppTheme.accentBlue),
+        _sectionHeader(Icons.bar_chart_rounded, 'Attendance Overview',
+            AppTheme.accentBlue),
         const SizedBox(height: 14),
         ...sections.map((s) {
           final pct = s['avg'] as double;
-          final color = pct >= 75 ? AppTheme.accentTeal : pct >= 60 ? AppTheme.accentAmber : AppTheme.accentPink;
+          final color = pct >= 75
+              ? AppTheme.accentTeal
+              : pct >= 60
+                  ? AppTheme.accentAmber
+                  : AppTheme.accentPink;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(s['section'] as String, style: AppTheme.dmSans(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
-                const Spacer(),
-                Text('${pct.toStringAsFixed(1)}%', style: AppTheme.mono(
-                    fontSize: 13, color: color, fontWeight: FontWeight.w700)),
-              ]),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: pct / 100,
-                  backgroundColor: color.withOpacity(0.10),
-                  valueColor: AlwaysStoppedAnimation(color),
-                  minHeight: 6,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text('${s['students']} students', style: AppTheme.dmSans(
-                  fontSize: 10, color: AppTheme.textMuted)),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(s['section'] as String,
+                        style: AppTheme.dmSans(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    Text('${pct.toStringAsFixed(1)}%',
+                        style: AppTheme.mono(
+                            fontSize: 13,
+                            color: color,
+                            fontWeight: FontWeight.w700)),
+                  ]),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: pct / 100,
+                      backgroundColor: color.withOpacity(0.10),
+                      valueColor: AlwaysStoppedAnimation(color),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text('${s['students']} students',
+                      style: AppTheme.dmSans(
+                          fontSize: 10, color: AppTheme.textMuted)),
+                ]),
           );
         }).toList(),
       ]),
     );
   }
 
-  // ── Medical section ───────────────────────────────────────────
   Widget _buildMedicalSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        _sectionHeader(Icons.medical_services_rounded, 'Pending Approvals', AppTheme.accentPink),
+        _sectionHeader(Icons.medical_services_rounded, 'Pending Approvals',
+            AppTheme.accentPink),
         const Spacer(),
         if (!isLoading)
           GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             color: (pendingRequests.isEmpty
-                ? AppTheme.accentTeal : AppTheme.accentAmber).withOpacity(0.10),
+                    ? AppTheme.accentTeal
+                    : AppTheme.accentAmber)
+                .withOpacity(0.10),
             borderColor: (pendingRequests.isEmpty
-                ? AppTheme.accentTeal : AppTheme.accentAmber).withOpacity(0.20),
-            child: Text('${pendingRequests.length} request${pendingRequests.length == 1 ? '' : 's'}',
-                style: AppTheme.dmSans(fontSize: 11, fontWeight: FontWeight.w700,
-                    color: pendingRequests.isEmpty ? AppTheme.accentTeal : AppTheme.accentAmber)),
+                    ? AppTheme.accentTeal
+                    : AppTheme.accentAmber)
+                .withOpacity(0.20),
+            child: Text(
+                '${pendingRequests.length} request${pendingRequests.length == 1 ? '' : 's'}',
+                style: AppTheme.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: pendingRequests.isEmpty
+                        ? AppTheme.accentTeal
+                        : AppTheme.accentAmber)),
           ),
       ]),
       const SizedBox(height: 12),
@@ -358,104 +409,147 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
           ? _buildLoadingState()
           : pendingRequests.isEmpty
               ? _buildEmptyState()
-              : Column(children: pendingRequests.asMap().entries.map((e) {
-                  final idx = e.key;
-                  final req = e.value;
-                  return AnimatedBuilder(
-                    animation: _staggerCtrl,
-                    builder: (_, child) {
-                      final s = (idx * 0.09).clamp(0.0, 0.75);
-                      final end = (s + 0.35).clamp(0.0, 1.0);
-                      final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(parent: _staggerCtrl,
-                              curve: Interval(s, end, curve: Curves.easeOut)));
-                      return FadeTransition(opacity: fade, child: child);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildRequestCard(req),
-                    ),
-                  );
-                }).toList()),
+              : Column(
+                  children: pendingRequests.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final req = e.value;
+                    return AnimatedBuilder(
+                      animation: _staggerCtrl,
+                      builder: (_, child) {
+                        final s = (idx * 0.09).clamp(0.0, 0.75);
+                        final end = (s + 0.35).clamp(0.0, 1.0);
+                        final fade = Tween<double>(
+                                begin: 0.0, end: 1.0)
+                            .animate(CurvedAnimation(
+                                parent: _staggerCtrl,
+                                curve: Interval(s, end,
+                                    curve: Curves.easeOut)));
+                        return FadeTransition(
+                            opacity: fade, child: child);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildRequestCard(req),
+                      ),
+                    );
+                  }).toList()),
     ]);
   }
 
   Widget _buildRequestCard(MedicalEntry req) {
     final hasMismatch = req.ocrStatus == 'MISMATCH';
-    final dayCount = req.toDate.difference(req.fromDate).inDays + 1;
+    final dayCount =
+        req.toDate.difference(req.fromDate).inDays + 1;
     final initials = req.studentRollNo.length >= 2
-        ? req.studentRollNo.substring(req.studentRollNo.length - 2) : req.studentRollNo;
+        ? req.studentRollNo
+            .substring(req.studentRollNo.length - 2)
+        : req.studentRollNo;
 
     return GlassCard(
-      borderColor: hasMismatch ? AppTheme.accentPink.withOpacity(0.25) : null,
+      borderColor: hasMismatch
+          ? AppTheme.accentPink.withOpacity(0.25)
+          : null,
       color: hasMismatch
-          ? AppTheme.accentPink.withOpacity(0.05) : Colors.white.withOpacity(0.55),
+          ? AppTheme.accentPink.withOpacity(0.05)
+          : Colors.white.withOpacity(0.55),
       onTap: () async {
         final result = await Navigator.push(context,
             AppTheme.slideRoute(MedicalDetailScreen(entry: req)));
         if (result == true) _loadData();
       },
       child: Column(children: [
-        // AI flag banner
         if (hasMismatch)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
               color: AppTheme.accentPink.withOpacity(0.10),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20)),
             ),
             child: Row(children: [
-              const Icon(Icons.smart_toy_rounded, size: 13, color: AppTheme.accentPink),
+              const Icon(Icons.smart_toy_rounded,
+                  size: 13, color: AppTheme.accentPink),
               const SizedBox(width: 6),
-              Text('AI flagged: Date mismatch detected', style: AppTheme.dmSans(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  color: AppTheme.accentPink)),
+              Text('AI flagged: Date mismatch detected',
+                  style: AppTheme.dmSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.accentPink)),
             ]),
           ),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(children: [
             Container(
-              width: 46, height: 46,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: [
-                  AppTheme.accentViolet, AppTheme.accentViolet.withOpacity(0.60),
+                  AppTheme.accentViolet,
+                  AppTheme.accentViolet.withOpacity(0.60),
                 ]),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: AppTheme.accentViolet.withOpacity(0.25), blurRadius: 10)],
+                boxShadow: [
+                  BoxShadow(
+                      color: AppTheme.accentViolet.withOpacity(0.25),
+                      blurRadius: 10)
+                ],
               ),
-              child: Center(child: Text(initials, style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14))),
+              child: Center(
+                  child: Text(initials,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14))),
             ),
             const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(req.studentRollNo, style: AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text(req.reason, style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textMuted),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.calendar_today_rounded, size: 11,
-                    color: AppTheme.accentViolet.withOpacity(0.80)),
-                const SizedBox(width: 4),
-                Text('${_fmt(req.fromDate)} → ${_fmt(req.toDate)}',
-                    style: AppTheme.dmSans(fontSize: 11, color: AppTheme.accentViolet,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: AppTheme.accentViolet.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6)),
-                  child: Text('$dayCount d', style: AppTheme.dmSans(
-                      fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w700)),
-                ),
-              ]),
-            ])),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(req.studentRollNo,
+                      style: AppTheme.sora(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(req.reason,
+                      style: AppTheme.dmSans(
+                          fontSize: 12, color: AppTheme.textMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Icon(Icons.calendar_today_rounded,
+                        size: 11,
+                        color: AppTheme.accentViolet.withOpacity(0.80)),
+                    const SizedBox(width: 4),
+                    Text(
+                        '${_fmt(req.fromDate)} → ${_fmt(req.toDate)}',
+                        style: AppTheme.dmSans(
+                            fontSize: 11,
+                            color: AppTheme.accentViolet,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                          color: AppTheme.accentViolet.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6)),
+                      child: Text('$dayCount d',
+                          style: AppTheme.dmSans(
+                              fontSize: 10,
+                              color: AppTheme.textMuted,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ]),
+                ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               const StatusBadge('PENDING'),
               const SizedBox(height: 8),
-              Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 20),
+              Icon(Icons.chevron_right_rounded,
+                  color: AppTheme.textMuted, size: 20),
             ]),
           ]),
         ),
@@ -465,61 +559,82 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
 
   Widget _buildLoadingState() {
     return Column(
-      children: List.generate(3, (_) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: GlassCard(
-          child: Container(height: 90, padding: const EdgeInsets.all(16),
-              child: Row(children: [
-                ShimmerBox(width: 46, height: 46, borderRadius: 14),
-                const SizedBox(width: 14),
-                Column(crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ShimmerBox(width: 140, height: 12),
-                      const SizedBox(height: 8),
-                      ShimmerBox(width: 100, height: 10),
-                    ]),
-              ])),
-        ),
-      )),
+      children: List.generate(
+          3,
+          (_) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  child: Container(
+                      height: 90,
+                      padding: const EdgeInsets.all(16),
+                      child: Row(children: [
+                        ShimmerBox(width: 46, height: 46, borderRadius: 14),
+                        const SizedBox(width: 14),
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ShimmerBox(width: 140, height: 12),
+                              const SizedBox(height: 8),
+                              ShimmerBox(width: 100, height: 10),
+                            ]),
+                      ])),
+                ),
+              )),
     );
   }
 
   Widget _buildEmptyState() {
     return GlassCard(
       padding: const EdgeInsets.all(40),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [
-              AppTheme.accentTeal.withOpacity(0.15),
-              AppTheme.accentTeal.withOpacity(0.05),
-            ]),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.done_all_rounded, size: 48, color: AppTheme.accentTeal),
-        ),
-        const SizedBox(height: 20),
-        Text('All Caught Up!', style: AppTheme.sora(fontSize: 20, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        Text('No pending medical requests', textAlign: TextAlign.center,
-            style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textMuted)),
-        const SizedBox(height: 20),
-        GlowButton(label: 'Refresh', accent: AppTheme.accentViolet, onPressed: _loadData,
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 16), height: 44),
-      ]),
+      child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  AppTheme.accentTeal.withOpacity(0.15),
+                  AppTheme.accentTeal.withOpacity(0.05),
+                ]),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.done_all_rounded,
+                  size: 48, color: AppTheme.accentTeal),
+            ),
+            const SizedBox(height: 20),
+            Text('All Caught Up!',
+                style: AppTheme.sora(
+                    fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text('No pending medical requests',
+                textAlign: TextAlign.center,
+                style: AppTheme.dmSans(
+                    fontSize: 13, color: AppTheme.textMuted)),
+            const SizedBox(height: 20),
+            GlowButton(
+                label: 'Refresh',
+                accent: AppTheme.accentViolet,
+                onPressed: _loadData,
+                icon: const Icon(Icons.refresh_rounded,
+                    color: Colors.white, size: 16),
+                height: 44),
+          ]),
     );
   }
 
   Widget _sectionHeader(IconData icon, String title, Color color) {
     return Row(children: [
-      Container(padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(color: color.withOpacity(0.12),
+      Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: color, size: 16)),
       const SizedBox(width: 10),
-      Text(title, style: AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
+      Text(title,
+          style:
+              AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
     ]);
   }
 
@@ -528,7 +643,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  TAB 1 — Classroom
+//  TAB 1 — Classroom  (unchanged)
 // ─────────────────────────────────────────────────────────────────
 class _HoDClassroomTab extends StatelessWidget {
   final String departmentId;
@@ -537,139 +652,223 @@ class _HoDClassroomTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = [
-      {'section': 'CS-A', 'students': 60, 'faculty': 'Dr. Sharma', 'subjects': 6},
-      {'section': 'CS-B', 'students': 58, 'faculty': 'Prof. Gupta', 'subjects': 6},
-      {'section': 'CS-C', 'students': 55, 'faculty': 'Dr. Patel', 'subjects': 6},
+      {
+        'section': 'CS-A',
+        'students': 60,
+        'faculty': 'Dr. Sharma',
+        'subjects': 6
+      },
+      {
+        'section': 'CS-B',
+        'students': 58,
+        'faculty': 'Prof. Gupta',
+        'subjects': 6
+      },
+      {
+        'section': 'CS-C',
+        'students': 55,
+        'faculty': 'Dr. Patel',
+        'subjects': 6
+      },
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 80, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 68, 16, 110),
       physics: const BouncingScrollPhysics(),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Classroom Monitor', style: AppTheme.sora(fontSize: 20, fontWeight: FontWeight.w700)),
+        Text('Classroom Monitor',
+            style:
+                AppTheme.sora(fontSize: 20, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text('Department: $departmentId',
-            style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary)),
+            style: AppTheme.dmSans(
+                fontSize: 13, color: AppTheme.textSecondary)),
         const SizedBox(height: 16),
-        ...sections.map((s) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GlassCard(
-            padding: const EdgeInsets.all(16),
-            borderColor: AppTheme.accentViolet.withOpacity(0.15),
-            child: Row(children: [
-              Container(
-                width: 50, height: 50,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                    AppTheme.accentViolet, AppTheme.accentViolet.withOpacity(0.6),
-                  ]),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: AppTheme.accentViolet.withOpacity(0.25), blurRadius: 10)],
-                ),
-                child: Center(child: Text(s['section'] as String,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11))),
-              ),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Section ${s['section']}', style: AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Row(children: [
-                  _chip('${s['students']} Students', AppTheme.accentBlue),
-                  const SizedBox(width: 6),
-                  _chip('${s['subjects']} Subjects', AppTheme.accentTeal),
-                ]),
-                const SizedBox(height: 4),
-                Text(s['faculty'] as String, style: AppTheme.dmSans(fontSize: 11, color: AppTheme.textMuted)),
-              ])),
-              Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
-            ]),
-          ),
-        )).toList(),
+        ...sections
+            .map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    borderColor: AppTheme.accentViolet.withOpacity(0.15),
+                    child: Row(children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [
+                            AppTheme.accentViolet,
+                            AppTheme.accentViolet.withOpacity(0.6),
+                          ]),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: AppTheme.accentViolet
+                                    .withOpacity(0.25),
+                                blurRadius: 10)
+                          ],
+                        ),
+                        child: Center(
+                            child: Text(s['section'] as String,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11))),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                            Text('Section ${s['section']}',
+                                style: AppTheme.sora(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              _chip('${s['students']} Students',
+                                  AppTheme.accentBlue),
+                              const SizedBox(width: 6),
+                              _chip('${s['subjects']} Subjects',
+                                  AppTheme.accentTeal),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text(s['faculty'] as String,
+                                style: AppTheme.dmSans(
+                                    fontSize: 11,
+                                    color: AppTheme.textMuted)),
+                          ])),
+                      Icon(Icons.chevron_right_rounded,
+                          color: AppTheme.textMuted),
+                    ]),
+                  ),
+                ))
+            .toList(),
       ]),
     );
   }
 
   Widget _chip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withOpacity(0.10),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: color.withOpacity(0.20))),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+      child: Text(label,
+          style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600)),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  TAB 2 — Announcements
+//  TAB 2 — Announcements  (unchanged)
 // ─────────────────────────────────────────────────────────────────
 class _HoDAnnouncementsTab extends StatefulWidget {
   final String departmentId;
   const _HoDAnnouncementsTab({required this.departmentId});
 
   @override
-  State<_HoDAnnouncementsTab> createState() => _HoDAnnouncementsTabState();
+  State<_HoDAnnouncementsTab> createState() =>
+      _HoDAnnouncementsTabState();
 }
 
 class _HoDAnnouncementsTabState extends State<_HoDAnnouncementsTab> {
   final _ctrl = TextEditingController();
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 80, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 68, 16, 110),
       physics: const BouncingScrollPhysics(),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Announcements', style: AppTheme.sora(fontSize: 20, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text('Broadcast to ${widget.departmentId}',
-            style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary)),
-        const SizedBox(height: 16),
-        GlassCard(
-          padding: const EdgeInsets.all(16),
-          borderColor: AppTheme.accentViolet.withOpacity(0.20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('New Department Notice', style: AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
-            TextField(controller: _ctrl, maxLines: 3,
-                decoration: const InputDecoration(hintText: 'Write department announcement...')),
-            const SizedBox(height: 12),
-            SizedBox(width: double.infinity,
-                child: GlowButton(label: 'Broadcast', accent: AppTheme.accentViolet,
-                    onPressed: () { _ctrl.clear(); },
-                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 16))),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Announcements',
+                style: AppTheme.sora(
+                    fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('Broadcast to ${widget.departmentId}',
+                style: AppTheme.dmSans(
+                    fontSize: 13, color: AppTheme.textSecondary)),
+            const SizedBox(height: 16),
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              borderColor: AppTheme.accentViolet.withOpacity(0.20),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('New Department Notice',
+                        style: AppTheme.sora(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _ctrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                          hintText:
+                              'Write department announcement...'),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                        width: double.infinity,
+                        child: GlowButton(
+                            label: 'Broadcast',
+                            accent: AppTheme.accentViolet,
+                            onPressed: () {
+                              _ctrl.clear();
+                            },
+                            icon: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 16))),
+                  ]),
+            ),
+            const SizedBox(height: 16),
+            Text('Previous Notices',
+                style: AppTheme.sora(
+                    fontSize: 14, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          'Exam timetable for end-semester released.',
+                          style: AppTheme.dmSans(fontSize: 13)),
+                      const SizedBox(height: 4),
+                      Text('3 days ago',
+                          style: AppTheme.dmSans(
+                              fontSize: 11,
+                              color: AppTheme.textMuted)),
+                    ])),
           ]),
-        ),
-        const SizedBox(height: 16),
-        Text('Previous Notices', style: AppTheme.sora(fontSize: 14, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 10),
-        GlassCard(padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Exam timetable for end-semester released.',
-                  style: AppTheme.dmSans(fontSize: 13)),
-              const SizedBox(height: 4),
-              Text('3 days ago', style: AppTheme.dmSans(fontSize: 11, color: AppTheme.textMuted)),
-            ])),
-      ]),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  TAB 3 — Profile
+//  TAB 3 — Profile  (unchanged)
 // ─────────────────────────────────────────────────────────────────
 class _HoDProfileTab extends StatelessWidget {
   final String departmentId;
   final VoidCallback onLogout;
-  const _HoDProfileTab({required this.departmentId, required this.onLogout});
+  const _HoDProfileTab(
+      {required this.departmentId, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 80, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 68, 16, 110),
       physics: const BouncingScrollPhysics(),
       child: Column(children: [
         GlassCard(
@@ -677,33 +876,56 @@ class _HoDProfileTab extends StatelessWidget {
           glowColor: AppTheme.accentViolet,
           child: Column(children: [
             Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppTheme.accentViolet, AppTheme.accentBlue]),
+                gradient: const LinearGradient(
+                    colors: [
+                      AppTheme.accentViolet,
+                      AppTheme.accentBlue
+                    ]),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: AppTheme.accentViolet.withOpacity(0.30), blurRadius: 20)],
+                boxShadow: [
+                  BoxShadow(
+                      color: AppTheme.accentViolet.withOpacity(0.30),
+                      blurRadius: 20)
+                ],
                 border: Border.all(color: Colors.white, width: 3),
               ),
-              child: const Center(child: Icon(Icons.admin_panel_settings_rounded,
-                  color: Colors.white, size: 36)),
+              child: const Center(
+                  child: Icon(Icons.admin_panel_settings_rounded,
+                      color: Colors.white, size: 36)),
             ),
             const SizedBox(height: 14),
-            Text('Head of Department', style: AppTheme.sora(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('Head of Department',
+                style: AppTheme.sora(
+                    fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(departmentId, style: AppTheme.dmSans(fontSize: 14, color: AppTheme.textSecondary)),
+            Text(departmentId,
+                style: AppTheme.dmSans(
+                    fontSize: 14, color: AppTheme.textSecondary)),
             const SizedBox(height: 12),
             const RoleBadge('HOD'),
           ]),
         ),
         const SizedBox(height: 12),
-        GlassCard(padding: const EdgeInsets.all(16), child: Column(children: [
-          _row(Icons.school_rounded, 'Department', departmentId, AppTheme.accentViolet),
-          _row(Icons.people_rounded, 'Total Students', '173 Students', AppTheme.accentViolet),
-          _row(Icons.person_rounded, 'Faculty Members', '8 Faculty', AppTheme.accentViolet),
-        ])),
+        GlassCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              _row(Icons.school_rounded, 'Department', departmentId,
+                  AppTheme.accentViolet),
+              _row(Icons.people_rounded, 'Total Students',
+                  '173 Students', AppTheme.accentViolet),
+              _row(Icons.person_rounded, 'Faculty Members',
+                  '8 Faculty', AppTheme.accentViolet),
+            ])),
         const SizedBox(height: 12),
-        GlowButton(label: 'Sign Out', accent: AppTheme.accentPink, onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 18)),
+        GlowButton(
+            label: 'Sign Out',
+            accent: AppTheme.accentPink,
+            onPressed: onLogout,
+            icon: const Icon(Icons.logout_rounded,
+                color: Colors.white, size: 18)),
       ]),
     );
   }
@@ -712,15 +934,24 @@ class _HoDProfileTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(children: [
-        Container(padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.10),
+        Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: color.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 16)),
         const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: AppTheme.dmSans(fontSize: 11, color: AppTheme.textMuted)),
-          Text(value, style: AppTheme.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
-        ])),
+        Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Text(label,
+                  style: AppTheme.dmSans(
+                      fontSize: 11, color: AppTheme.textMuted)),
+              Text(value,
+                  style: AppTheme.dmSans(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+            ])),
       ]),
     );
   }
