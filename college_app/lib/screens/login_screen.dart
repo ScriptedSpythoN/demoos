@@ -8,6 +8,7 @@ import 'hod_dashboard_screen.dart';
 import 'student_dashboard_screen.dart';
 import 'teacher_dashboard_screen.dart';
 import 'registration_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -159,17 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(seconds: 4),
     ));
   }
-
-  void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Password reset link sent to your registered email'),
-      backgroundColor: AppTheme.accentBlue.withOpacity(0.92),
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    ));
-  }
-
+  
   void _handleRegister() {
     Navigator.push(
       context,
@@ -482,12 +473,29 @@ class _LoginScreenState extends State<LoginScreen>
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
-        onTap: _handleForgotPassword,
-        child: Text(
-          'Forgot Password?',
-          style: AppTheme.dmSans(fontSize: 13, color: _roleAccent, fontWeight: FontWeight.w600),
-        ),
+  onTap: () => Navigator.push(
+    context,
+    PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (_, __, ___) => const ForgotPasswordScreen(),
+      transitionsBuilder: (_, anim, __, child) => SlideTransition(
+        position: Tween<Offset>(
+                begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(
+                parent: anim, curve: Curves.easeOutCubic)),
+        child: FadeTransition(opacity: anim, child: child),
       ),
+    ),
+  ),
+  child: Text(
+    'Forgot password?',
+    style: AppTheme.dmSans(
+      fontSize: 13,
+      color: AppTheme.accentBlue,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
     );
   }
 

@@ -109,3 +109,26 @@ def review_medical(
     db.commit()
     
     return {"success": True}
+
+@router.get("/hod/reviewed")
+def get_reviewed(department_id: str, db: Session = Depends(get_db)):
+    # Fetch requests where status is NOT PENDING
+    reqs = db.exec(
+        select(MedicalRequest)
+        .where(MedicalRequest.department_id == department_id)
+        .where(MedicalRequest.status != MedicalStatus.PENDING)
+    ).all()
+    
+    return [
+        {
+            "request_id": str(r.id),
+            "student_roll_no": r.student_roll_no,
+            "from_date": r.from_date,
+            "to_date": r.to_date,
+            "status": r.status,
+            "hod_remark": r.hod_remark,
+            "reason": r.reason,
+            "document_path": r.document_path
+        }
+        for r in reqs
+    ]

@@ -37,6 +37,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # --- Routes ---
 app.include_router(auth_router, prefix="/api/auth")
+app.include_router(auth_router, prefix="/api/auth/register") 
 app.include_router(attendance_router, prefix="/api/attendance")
 app.include_router(medical_router, prefix="/api/medical")
 app.include_router(student_router, prefix="/api/students")

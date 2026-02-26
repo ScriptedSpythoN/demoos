@@ -7,7 +7,10 @@ import '../theme/app_theme.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/dashboard_top_bar.dart';
 import 'medical_detail_screen.dart';
+import 'reviewed_medical_screen.dart';
 import 'login_screen.dart';
+import 'hod_student_directory_screen.dart';
+
 
 // ─────────────────────────────────────────────────────────────────
 //  HoDDashboardScreen — Shell with Bottom Navigation
@@ -117,6 +120,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     with SingleTickerProviderStateMixin {
   List<MedicalEntry> pendingRequests = [];
   bool isLoading = true;
+  int reviewedCount = 0;
   late AnimationController _staggerCtrl;
 
   @override
@@ -138,11 +142,13 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
   Future<void> _loadData() async {
     setState(() => isLoading = true);
     try {
-      final requests =
-          await ApiService.fetchPendingMedical(widget.departmentId);
+      final requests = await ApiService.fetchPendingMedical(widget.departmentId);
+      final reviewedData = await ApiService.fetchReviewedMedical(widget.departmentId); // Fetch the reviewed list
+      
       if (!mounted) return;
       setState(() {
         pendingRequests = requests;
+        reviewedCount = reviewedData.length; // Set the dynamic count
         isLoading = false;
       });
       _staggerCtrl.reset();
@@ -154,8 +160,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         content: Text('Error: $e'),
         backgroundColor: AppTheme.accentPink.withOpacity(0.90),
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ));
     }
   }
@@ -198,7 +203,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     );
   }
 
-  Widget _buildStatsRow() {
+Widget _buildStatsRow() {
     final flagged =
         pendingRequests.where((r) => r.ocrStatus == 'MISMATCH').length;
     return Row(
@@ -212,31 +217,45 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         _statCard('${isLoading ? '—' : flagged}', 'AI Flagged',
             Icons.smart_toy_rounded, AppTheme.accentPink),
         const SizedBox(width: 10),
-        _statCard('0', 'Reviewed',
-            Icons.check_circle_outline_rounded, AppTheme.accentTeal),
+        _statCard(
+          '${isLoading ? '—' : reviewedCount}', // Now dynamic!
+          'Reviewed',
+          Icons.check_circle_outline_rounded, 
+          AppTheme.accentTeal,
+          onTap: () {
+            // Smoothly slide to the new reviewed leaves screen
+            Navigator.push(
+              context,
+              AppTheme.slideRoute(ReviewedMedicalScreen(departmentId: widget.departmentId)),
+            );
+          },
+        ),
       ],
     );
   }
 
   Widget _statCard(
-      String value, String label, IconData icon, Color color) {
+      String value, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return Expanded(
-      child: GlassCard(
-        padding: const EdgeInsets.all(14),
-        borderColor: color.withOpacity(0.20),
-        color: const Color(0xFFFFFFFF).withOpacity(0.65),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 8),
-          Text(value,
-              style: AppTheme.mono(
-                  fontSize: 22, color: color, fontWeight: FontWeight.w800)),
-          Text(label,
-              style: AppTheme.dmSans(
-                  fontSize: 11,
-                  color: AppTheme.textMuted,
-                  fontWeight: FontWeight.w500)),
-        ]),
+      child: GestureDetector(
+        onTap: onTap,
+        child: GlassCard(
+          padding: const EdgeInsets.all(14),
+          borderColor: color.withOpacity(0.20),
+          color: const Color(0xFFFFFFFF).withOpacity(0.65),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 8),
+            Text(value,
+                style: AppTheme.mono(
+                    fontSize: 22, color: color, fontWeight: FontWeight.w800)),
+            Text(label,
+                style: AppTheme.dmSans(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500)),
+          ]),
+        ),
       ),
     );
   }
@@ -319,60 +338,43 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     );
   }
 
+  // Replace the old _buildAttendanceOverview with this:
   Widget _buildAttendanceOverview() {
-    final sections = [
-      {'section': 'CS-A', 'avg': 82.5, 'students': 60},
-      {'section': 'CS-B', 'avg': 75.0, 'students': 58},
-      {'section': 'CS-C', 'avg': 68.0, 'students': 55},
-    ];
-
     return GlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionHeader(Icons.bar_chart_rounded, 'Attendance Overview',
-            AppTheme.accentBlue),
-        const SizedBox(height: 14),
-        ...sections.map((s) {
-          final pct = s['avg'] as double;
-          final color = pct >= 75
-              ? AppTheme.accentTeal
-              : pct >= 60
-                  ? AppTheme.accentAmber
-                  : AppTheme.accentPink;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      glowColor: AppTheme.accentBlue,
+      onTap: () {
+        Navigator.push(
+          context,
+          AppTheme.slideRoute(HodStudentDirectoryScreen(departmentId: widget.departmentId)),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.accentBlue.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.people_alt_rounded, color: AppTheme.accentBlue, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text(s['section'] as String,
-                        style: AppTheme.dmSans(
-                            fontSize: 13, fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    Text('${pct.toStringAsFixed(1)}%',
-                        style: AppTheme.mono(
-                            fontSize: 13,
-                            color: color,
-                            fontWeight: FontWeight.w700)),
-                  ]),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: pct / 100,
-                      backgroundColor: color.withOpacity(0.10),
-                      valueColor: AlwaysStoppedAnimation(color),
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text('${s['students']} students',
-                      style: AppTheme.dmSans(
-                          fontSize: 10, color: AppTheme.textMuted)),
-                ]),
-          );
-        }).toList(),
-      ]),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Student Directory & Analytics', 
+                    style: AppTheme.sora(fontSize: 15, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text('Monitor attendance & access student info', 
+                    style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textMuted)),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.accentBlue, size: 16),
+        ],
+      ),
     );
   }
 
