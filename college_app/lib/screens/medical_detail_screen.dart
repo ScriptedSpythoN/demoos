@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/medical_entry.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 
 class MedicalDetailScreen extends StatefulWidget {
   final MedicalEntry entry;
@@ -40,13 +41,12 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     if (action == 'REJECTED' && _remarkController.text.trim().isEmpty) {
       _showSnackBar(
         'A remark is required when rejecting a request.',
-        Colors.orange.shade600,
+        AppTheme.accentAmber,
         Icons.info_outline_rounded,
       );
       return;
     }
 
-    // Confirmation dialog
     final confirmed = await _showConfirmDialog(action);
     if (!confirmed) return;
 
@@ -63,7 +63,7 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
           action == 'APPROVED'
               ? 'Request approved successfully'
               : 'Request rejected',
-          action == 'APPROVED' ? Colors.green.shade600 : Colors.red.shade600,
+          action == 'APPROVED' ? AppTheme.accentTeal : AppTheme.accentPink,
           action == 'APPROVED'
               ? Icons.check_circle_rounded
               : Icons.cancel_rounded,
@@ -74,7 +74,10 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     } catch (e) {
       if (mounted) {
         _showSnackBar(
-            'Error: $e', Colors.red.shade600, Icons.error_outline_rounded);
+          'Error: $e',
+          AppTheme.accentPink,
+          Icons.error_outline_rounded,
+        );
         setState(() => _isProcessing = false);
       }
     }
@@ -82,36 +85,36 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
 
   Future<bool> _showConfirmDialog(String action) async {
     final isApprove = action == 'APPROVED';
+    final accentColor = isApprove ? AppTheme.accentTeal : AppTheme.accentPink;
+
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            // Picks up dialogTheme from AppTheme.lightTheme automatically
             contentPadding: const EdgeInsets.all(24),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Accent icon circle
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color:
-                        isApprove ? Colors.green.shade50 : Colors.red.shade50,
+                    color: accentColor.withOpacity(0.10),
                     shape: BoxShape.circle,
+                    border: Border.all(color: accentColor.withOpacity(0.25)),
                   ),
                   child: Icon(
                     isApprove
                         ? Icons.check_circle_rounded
                         : Icons.cancel_rounded,
-                    color:
-                        isApprove ? Colors.green.shade500 : Colors.red.shade500,
+                    color: accentColor,
                     size: 36,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   isApprove ? 'Approve Request?' : 'Reject Request?',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                  // Uses dialogTheme.titleTextStyle (Sora bold)
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -119,29 +122,50 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
                       ? 'This will approve the medical leave for ${widget.entry.studentRollNo}.'
                       : 'This will reject the medical leave request. The student will be notified.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+                  // Uses dialogTheme.contentTextStyle (DM Sans)
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: Text('Cancel',
-                    style: TextStyle(color: Colors.grey.shade600)),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isApprove ? Colors.green.shade500 : Colors.red.shade500,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                child: Text(
+                  'Cancel',
+                  style: AppTheme.dmSans(
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                child: Text(isApprove ? 'Approve' : 'Reject'),
               ),
+              // Themed filled button
+              GestureDetector(
+                onTap: () => Navigator.pop(ctx, true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.30),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    isApprove ? 'Approve' : 'Reject',
+                    style: AppTheme.dmSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
             ],
           ),
         ) ??
@@ -149,17 +173,23 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
   }
 
   void _showSnackBar(String message, Color color, IconData icon) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(message)),
-      ]),
-      backgroundColor: color,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        // Uses snackBarTheme from AppTheme.lightTheme (floating, glass-white)
+        content: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTheme.dmSans(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -169,159 +199,110 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
         widget.entry.toDate.difference(widget.entry.fromDate).inDays + 1;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
+      backgroundColor: Colors.transparent, // AppBackground provides the gradient
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        // Transparent AppBar — inherits AppTheme.lightTheme appBarTheme
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAppBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // AI Flag Warning
-                    if (hasMismatch) ...[
-                      _buildAiWarningBanner(),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Student Info Card
-                    _buildStudentInfoCard(dayCount),
-                    const SizedBox(height: 16),
-
-                    // Date Range Card
-                    _buildDateRangeCard(),
-                    const SizedBox(height: 16),
-
-                    // Reason Card
-                    _buildReasonCard(),
-                    const SizedBox(height: 16),
-
-                    // Document Card
-                    _buildDocumentCard(),
-                    const SizedBox(height: 16),
-
-                    // OCR Section (if available)
-                    if (widget.entry.ocrText != null &&
-                        widget.entry.ocrText!.isNotEmpty) ...[
-                      _buildOcrCard(hasMismatch),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // HOD Remark
-                    _buildRemarkSection(),
-                    const SizedBox(height: 28),
-
-                    // Action Buttons
-                    _buildActionButtons(),
-                  ],
-                ),
+            Text('Medical Review', style: AppTheme.sora(fontSize: 18)),
+            Text(
+              widget.entry.studentRollNo,
+              style: AppTheme.dmSans(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w400,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade800, Colors.indigo.shade600],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppTheme.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Themed PENDING badge using StatusBadge widget
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(child: StatusBadge('PENDING')),
+          ),
+        ],
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 16, 20),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Medical Review',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.entry.studentRollNo,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha((0.75 * 255).round()),
-                        fontSize: 13,
-                      ),
-                    ),
+      body: AppBackground(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── AI Mismatch Warning ──────────────────────────
+                  if (hasMismatch) ...[
+                    _buildAiWarningBanner(),
+                    const SizedBox(height: 16),
                   ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade400,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.pending_actions_rounded,
-                        color: Colors.white, size: 14),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'PENDING',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+
+                  // ── Student Info Card ────────────────────────────
+                  _buildStudentInfoCard(dayCount),
+                  const SizedBox(height: 16),
+
+                  // ── Date Range Card ──────────────────────────────
+                  _buildDateRangeCard(),
+                  const SizedBox(height: 16),
+
+                  // ── Reason Card ──────────────────────────────────
+                  _buildReasonCard(),
+                  const SizedBox(height: 16),
+
+                  // ── Document Card ────────────────────────────────
+                  _buildDocumentCard(),
+                  const SizedBox(height: 16),
+
+                  // ── OCR Section ──────────────────────────────────
+                  if (widget.entry.ocrText != null &&
+                      widget.entry.ocrText!.isNotEmpty) ...[
+                    _buildOcrCard(hasMismatch),
+                    const SizedBox(height: 16),
                   ],
-                ),
+
+                  // ── HOD Remark ───────────────────────────────────
+                  _buildRemarkSection(),
+                  const SizedBox(height: 28),
+
+                  // ── Action Buttons ───────────────────────────────
+                  _buildActionButtons(),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // ── AI Warning Banner ──────────────────────────────────────────────
   Widget _buildAiWarningBanner() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200, width: 1.5),
-      ),
+      borderColor: AppTheme.accentPink.withOpacity(0.40),
+      glowColor: AppTheme.accentPink,
+      color: AppTheme.accentPink.withOpacity(0.06),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.shade100,
+              color: AppTheme.accentPink.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(Icons.smart_toy_rounded,
-                color: Colors.red.shade600, size: 20),
+                color: AppTheme.accentPink, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -330,18 +311,18 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
               children: [
                 Text(
                   'AI Verification Warning',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
+                  style: AppTheme.sora(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.accentPink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'The document dates don\'t match the claimed leave period. Please verify carefully before approving.',
-                  style: TextStyle(
+                  style: AppTheme.dmSans(
                     fontSize: 12,
-                    color: Colors.red.shade600,
+                    color: AppTheme.accentPink,
                     height: 1.4,
                   ),
                 ),
@@ -353,31 +334,42 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     );
   }
 
+  // ── Student Info Card ──────────────────────────────────────────────
   Widget _buildStudentInfoCard(int dayCount) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
+      glowColor: AppTheme.accentViolet,
       child: Row(
         children: [
+          // Avatar showing last 2 chars of roll number
           Container(
             width: 56,
             height: 56,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.indigo.shade400, Colors.blue.shade500],
+                colors: [AppTheme.accentViolet, AppTheme.accentBlue],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentViolet.withOpacity(0.30),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Center(
               child: Text(
                 widget.entry.studentRollNo.length >= 2
-                    ? widget.entry.studentRollNo
-                        .substring(widget.entry.studentRollNo.length - 2)
+                    ? widget.entry.studentRollNo.substring(
+                        widget.entry.studentRollNo.length - 2)
                     : widget.entry.studentRollNo,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                style: AppTheme.sora(
                   fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -389,45 +381,58 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
               children: [
                 Text(
                   widget.entry.studentRollNo,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                  style: AppTheme.sora(fontSize: 15, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Computer Science Department',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  style: AppTheme.dmSans(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
-          Column(
-            children: [
-              Text(
-                '$dayCount',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo.shade600,
+          // Day count pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.accentViolet.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppTheme.accentViolet.withOpacity(0.20)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '$dayCount',
+                  style: AppTheme.sora(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.accentViolet,
+                  ),
                 ),
-              ),
-              Text(
-                dayCount == 1 ? 'day' : 'days',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-            ],
+                Text(
+                  dayCount == 1 ? 'day' : 'days',
+                  style: AppTheme.dmSans(
+                    fontSize: 11,
+                    color: AppTheme.accentViolet,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
+  // ── Date Range Card ────────────────────────────────────────────────
   Widget _buildDateRangeCard() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,21 +441,26 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
           Row(
             children: [
               Expanded(
-                child:
-                    _buildDateBlock('From', widget.entry.fromDate, Colors.blue),
+                child: _buildDateBlock(
+                  'From',
+                  widget.entry.fromDate,
+                  AppTheme.accentBlue,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Column(
-                  children: [
-                    Icon(Icons.arrow_forward_rounded,
-                        color: Colors.grey.shade300, size: 20),
-                  ],
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: AppTheme.textMuted,
+                  size: 20,
                 ),
               ),
               Expanded(
-                child:
-                    _buildDateBlock('To', widget.entry.toDate, Colors.indigo),
+                child: _buildDateBlock(
+                  'To',
+                  widget.entry.toDate,
+                  AppTheme.accentViolet,
+                ),
               ),
             ],
           ),
@@ -463,29 +473,29 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withAlpha((0.05 * 255).round()),
+        color: color.withOpacity(0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withAlpha((0.15 * 255).round())),
+        border: Border.all(color: color.withOpacity(0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label.toUpperCase(),
-            style: TextStyle(
+            style: AppTheme.dmSans(
               fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color.withAlpha((0.7 * 255).round()),
+              fontWeight: FontWeight.w700,
+              color: color.withOpacity(0.75),
               letterSpacing: 0.8,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             _fmt(date),
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
+            style: AppTheme.sora(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
             ),
           ),
         ],
@@ -493,10 +503,10 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     );
   }
 
+  // ── Reason Card ────────────────────────────────────────────────────
   Widget _buildReasonCard() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -504,9 +514,9 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
           const SizedBox(height: 12),
           Text(
             widget.entry.reason,
-            style: TextStyle(
+            style: AppTheme.dmSans(
               fontSize: 14,
-              color: Colors.grey.shade700,
+              color: AppTheme.textSecondary,
               height: 1.5,
             ),
           ),
@@ -515,10 +525,10 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     );
   }
 
+  // ── Document Card ──────────────────────────────────────────────────
   Widget _buildDocumentCard() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -526,27 +536,32 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
           const SizedBox(height: 14),
           GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Opening PDF Viewer...'),
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Opening PDF Viewer...')),
+              );
             },
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: AppTheme.accentPink.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.red.shade100),
+                border: Border.all(
+                  color: AppTheme.accentPink.withOpacity(0.18),
+                ),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: AppTheme.accentPink.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.picture_as_pdf_rounded,
-                        color: Colors.red.shade600, size: 24),
+                    child: Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: AppTheme.accentPink,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -555,23 +570,27 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
                       children: [
                         Text(
                           'Medical Certificate.pdf',
-                          style: TextStyle(
+                          style: AppTheme.dmSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade800,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           'Tap to view document',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                          style: AppTheme.dmSans(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.open_in_new_rounded,
-                      color: Colors.red.shade400, size: 18),
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    color: AppTheme.accentPink.withOpacity(0.60),
+                    size: 18,
+                  ),
                 ],
               ),
             ),
@@ -581,61 +600,51 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     );
   }
 
+  // ── OCR Card ───────────────────────────────────────────────────────
   Widget _buildOcrCard(bool hasMismatch) {
-    return Container(
+    final statusColor =
+        hasMismatch ? AppTheme.accentPink : AppTheme.accentTeal;
+
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: hasMismatch ? Colors.red.shade200 : Colors.green.shade200,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.04 * 255).round()),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderColor: statusColor.withOpacity(0.35),
+      glowColor: statusColor,
+      color: statusColor.withOpacity(0.04),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.smart_toy_rounded,
-                  size: 16,
-                  color: hasMismatch
-                      ? Colors.red.shade600
-                      : Colors.green.shade600),
+              Icon(Icons.smart_toy_rounded, size: 16, color: statusColor),
               const SizedBox(width: 8),
               Text(
                 'AI OCR Extraction',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
+                style: AppTheme.sora(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const Spacer(),
+              // Re-use StatusBadge logic via a manual themed pill here
+              // since OCR status is custom (MISMATCH/VERIFIED, not leave status)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color:
-                      hasMismatch ? Colors.red.shade50 : Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(20),
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: statusColor.withOpacity(0.35)),
                 ),
                 child: Text(
                   hasMismatch ? 'MISMATCH' : 'VERIFIED',
-                  style: TextStyle(
+                  style: AppTheme.dmSans(
                     fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: hasMismatch
-                        ? Colors.red.shade600
-                        : Colors.green.shade600,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w800,
+                    color: statusColor,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ),
@@ -646,16 +655,16 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: AppTheme.glassFill,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.glassBorder),
             ),
             child: Text(
               widget.entry.ocrText ?? '',
-              style: TextStyle(
+              style: AppTheme.mono(
                 fontSize: 12,
-                color: Colors.grey.shade600,
-                height: 1.5,
-                fontFamily: 'monospace',
+                fontWeight: FontWeight.w400,
+                color: AppTheme.textSecondary,
               ),
             ),
           ),
@@ -664,174 +673,121 @@ class _MedicalDetailScreenState extends State<MedicalDetailScreen>
     );
   }
 
+  // ── HOD Remark TextField ───────────────────────────────────────────
   Widget _buildRemarkSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel('HOD Remarks', Icons.rate_review_rounded),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha((0.04 * 255).round()),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+        // GlassCard wraps the TextField to keep the frosted look consistent
+        GlassCard(
+          padding: EdgeInsets.zero,
           child: TextField(
             controller: _remarkController,
             maxLines: 4,
-            decoration: InputDecoration(
+            // inputDecorationTheme from AppTheme.lightTheme styles this
+            decoration: const InputDecoration(
               hintText: 'Add notes (required for rejection)...',
-              hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.indigo.shade400, width: 2),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.all(16),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              contentPadding: EdgeInsets.all(16),
             ),
-            style: TextStyle(
-                fontSize: 14, color: Colors.grey.shade800, height: 1.5),
+            style: AppTheme.dmSans(
+              fontSize: 14,
+              color: AppTheme.textPrimary,
+              height: 1.5,
+            ),
           ),
         ),
       ],
     );
   }
 
+  // ── Action Buttons ─────────────────────────────────────────────────
   Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildDecisionButton(
-            label: 'Reject',
-            icon: Icons.close_rounded,
-            color: Colors.red.shade500,
-            isOutlined: true,
-            onPressed: _isProcessing ? null : () => _submitDecision('REJECTED'),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          flex: 2,
-          child: _buildDecisionButton(
-            label: 'Approve',
-            icon: Icons.check_rounded,
-            color: Colors.green.shade500,
-            isOutlined: false,
-            onPressed: _isProcessing ? null : () => _submitDecision('APPROVED'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDecisionButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required bool isOutlined,
-    required VoidCallback? onPressed,
-  }) {
     if (_isProcessing) {
-      return Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
-        ),
+      return GlassCard(
+        padding: const EdgeInsets.symmetric(vertical: 18),
         child: const Center(
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+            child: CircularProgressIndicator(
+              color: AppTheme.accentViolet,
+              strokeWidth: 2.5,
+            ),
           ),
         ),
       );
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 56,
-          decoration: BoxDecoration(
-            color: isOutlined ? Colors.transparent : color,
-            borderRadius: BorderRadius.circular(16),
-            border: isOutlined ? Border.all(color: color, width: 2) : null,
-            boxShadow: isOutlined
-                ? null
-                : [
-                    BoxShadow(
-                      color: color.withAlpha((0.4 * 255).round()),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: isOutlined ? color : Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isOutlined ? color : Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
+    return Row(
+      children: [
+        // ── Reject — outlined ghost button ──────────────────────
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _submitDecision('REJECTED'),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppTheme.accentPink.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(50),
+                border: Border.all(
+                  color: AppTheme.accentPink.withOpacity(0.55),
+                  width: 1.5,
                 ),
               ),
-            ],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.close_rounded,
+                      color: AppTheme.accentPink, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Reject',
+                    style: AppTheme.dmSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.accentPink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha((0.04 * 255).round()),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
+        const SizedBox(width: 14),
+        // ── Approve — GlowButton (AppTheme CTA component) ───────
+        Expanded(
+          flex: 2,
+          child: GlowButton(
+            label: 'Approve',
+            accent: AppTheme.accentTeal,
+            onPressed: () => _submitDecision('APPROVED'),
+            height: 56,
+            icon: const Icon(Icons.check_rounded,
+                color: Colors.white, size: 20),
+          ),
         ),
       ],
     );
   }
 
+  // ── Shared section label ───────────────────────────────────────────
   Widget _sectionLabel(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.indigo.shade500),
+        Icon(icon, size: 16, color: AppTheme.accentViolet),
         const SizedBox(width: 8),
         Text(
           title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade700,
-            letterSpacing: 0.2,
+          style: AppTheme.sora(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
           ),
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/medical_entry.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 
 class StudentMedicalHistoryScreen extends StatefulWidget {
   const StudentMedicalHistoryScreen({super.key, required this.studentRollNo});
@@ -60,15 +61,17 @@ class _StudentMedicalHistoryScreenState
       messenger.showSnackBar(
         SnackBar(
           content: Row(children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 18),
+            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Text('Error fetching history: $e'),
+            Expanded(
+              child: Text(
+                'Error fetching history: $e',
+                style: AppTheme.dmSans(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
           ]),
-          backgroundColor: Colors.red.shade600,
+          backgroundColor: AppTheme.accentPink.withOpacity(0.95),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
         ),
       );
     }
@@ -91,110 +94,74 @@ class _StudentMedicalHistoryScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _buildAppBar(),
-          if (!isLoading && submissions.isNotEmpty) _buildSummaryCards(),
-          if (!isLoading && submissions.isNotEmpty) _buildFilterChips(),
-          Expanded(
-            child: isLoading
-                ? _buildLoadingState()
-                : _filteredSubmissions.isEmpty
-                    ? _buildEmptyState()
-                    : _buildHistoryList(),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          children: [
+            Text('Medical History', style: AppTheme.sora(fontSize: 18)),
+            Text(
+              widget.studentRollNo,
+              style: AppTheme.mono(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+          ],
+        ),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.4),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary, size: 20),
+              onPressed: _loadHistory,
+              tooltip: 'Refresh',
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade700, Colors.blue.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 16, 20),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Medical History',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.studentRollNo,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha((0.75 * 255).round()),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha((0.2 * 255).round()),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: _loadHistory,
-                  tooltip: 'Refresh',
-                ),
-              ),
-            ],
-          ),
+      body: AppBackground(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 100), // Safely clears the transparent AppBar
+            if (!isLoading && submissions.isNotEmpty) _buildSummaryCards(),
+            if (!isLoading && submissions.isNotEmpty) _buildFilterChips(),
+            Expanded(
+              child: isLoading
+                  ? _buildLoadingState()
+                  : _filteredSubmissions.isEmpty
+                      ? _buildEmptyState()
+                      : _buildHistoryList(),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildSummaryCards() {
-    return Container(
-      color: Colors.indigo.shade700,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            _buildStatPill('Total', _countByStatus('All'), Colors.indigo),
-            const SizedBox(width: 10),
-            _buildStatPill(
-                'Approved', _countByStatus('Approved'), Colors.green),
-            const SizedBox(width: 10),
-            _buildStatPill('Pending', _countByStatus('Pending'), Colors.orange),
-            const SizedBox(width: 10),
-            _buildStatPill('Rejected', _countByStatus('Rejected'), Colors.red),
+            _buildStatPill('Total', _countByStatus('All'), AppTheme.accentBlue),
+            const SizedBox(width: 8),
+            _buildStatPill('Approved', _countByStatus('Approved'), AppTheme.statusAccepted),
+            const SizedBox(width: 8),
+            _buildStatPill('Pending', _countByStatus('Pending'), AppTheme.statusPending),
+            const SizedBox(width: 8),
+            _buildStatPill('Rejected', _countByStatus('Rejected'), AppTheme.statusRejected),
           ],
         ),
       ),
@@ -206,28 +173,27 @@ class _StudentMedicalHistoryScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withAlpha((0.08 * 255).round()),
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: color.withAlpha((0.15 * 255).round()), width: 1),
+          border: Border.all(color: color.withOpacity(0.2), width: 1.2),
         ),
         child: Column(
           children: [
             Text(
               '$count',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+              style: AppTheme.sora(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
+              style: AppTheme.dmSans(
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: color.withAlpha((0.7 * 255).round()),
+                fontWeight: FontWeight.w700,
+                color: color.withOpacity(0.8),
                 letterSpacing: 0.3,
               ),
             ),
@@ -239,52 +205,47 @@ class _StudentMedicalHistoryScreenState
 
   Widget _buildFilterChips() {
     return Container(
-      color: const Color(0xFFF5F7FA),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: SingleChildScrollView(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter;
-            final color = _chipColor(filter);
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedFilter = filter),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? color : Colors.grey.shade300,
-                      width: 1.5,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: color.withAlpha((0.3 * 255).round()),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            )
-                          ]
-                        : [],
+        itemCount: _filters.length,
+        itemBuilder: (context, index) {
+          final filter = _filters[index];
+          final isSelected = _selectedFilter == filter;
+          final color = _chipColor(filter);
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8, top: 12, bottom: 12),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilter = filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? color : Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? color : Colors.white.withOpacity(0.8),
+                    width: 1.5,
                   ),
-                  child: Text(
-                    filter,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.grey.shade600,
-                    ),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))]
+                      : [],
+                ),
+                child: Text(
+                  filter,
+                  style: AppTheme.dmSans(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : AppTheme.textSecondary,
                   ),
                 ),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -292,19 +253,20 @@ class _StudentMedicalHistoryScreenState
   Color _chipColor(String filter) {
     switch (filter) {
       case 'Approved':
-        return Colors.green.shade500;
+        return AppTheme.statusAccepted;
       case 'Pending':
-        return Colors.orange.shade500;
+        return AppTheme.statusPending;
       case 'Rejected':
-        return Colors.red.shade500;
+        return AppTheme.statusRejected;
       default:
-        return Colors.indigo.shade500;
+        return AppTheme.accentBlue;
     }
   }
 
   Widget _buildHistoryList() {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      physics: const BouncingScrollPhysics(),
       itemCount: _filteredSubmissions.length,
       itemBuilder: (context, index) {
         final entry = _filteredSubmissions[index];
@@ -313,7 +275,7 @@ class _StudentMedicalHistoryScreenState
           builder: (context, child) {
             final delay = (index * 0.1).clamp(0.0, 0.8);
             final slideAnim = Tween<Offset>(
-              begin: const Offset(0, 0.3),
+              begin: const Offset(0, 0.2),
               end: Offset.zero,
             ).animate(CurvedAnimation(
               parent: _animController,
@@ -338,190 +300,164 @@ class _StudentMedicalHistoryScreenState
   }
 
   Widget _buildEntryCard(MedicalEntry entry, int index) {
-    final statusColor = _statusColor(entry.status);
+    final statusColor = AppTheme.statusColor(entry.status);
     final statusIcon = _statusIcon(entry.status);
     final dayCount = entry.toDate.difference(entry.fromDate).inDays + 1;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          children: [
-            // Top status bar
-            Container(
-              height: 4,
-              color: statusColor,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Row
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: statusColor.withAlpha((0.1 * 255).round()),
-                          borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GlassCard(
+        padding: EdgeInsets.zero, // We handle padding inside
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            children: [
+              // Top status bar
+              Container(
+                height: 4,
+                color: statusColor,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(statusIcon, color: statusColor, size: 22),
                         ),
-                        child: Icon(statusIcon, color: statusColor, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Request #${index + 1}',
+                                style: AppTheme.sora(fontSize: 15, fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                entry.reason,
+                                style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        StatusBadge(entry.status), // Dynamically uses your AppTheme badge
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    Divider(color: Colors.white.withOpacity(0.5), thickness: 1, height: 1),
+                    const SizedBox(height: 16),
+
+                    // Date Range Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoChip(
+                            icon: Icons.calendar_today_rounded,
+                            label: 'From',
+                            value: _fmt(entry.fromDate),
+                            color: AppTheme.accentBlue,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(Icons.arrow_forward_rounded,
+                              size: 16, color: AppTheme.textMuted),
+                        ),
+                        Expanded(
+                          child: _buildInfoChip(
+                            icon: Icons.event_rounded,
+                            label: 'To',
+                            value: _fmt(entry.toDate),
+                            color: AppTheme.accentViolet,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                '$dayCount',
+                                style: AppTheme.sora(fontSize: 18, fontWeight: FontWeight.w700),
+                              ),
+                              Text(
+                                dayCount == 1 ? 'day' : 'days',
+                                style: AppTheme.dmSans(fontSize: 10, color: AppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // HOD Remark
+                    if (entry.hodRemark != null && entry.hodRemark!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: statusColor.withOpacity(0.15)),
+                        ),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Request #${index + 1}',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade800,
+                            Icon(Icons.format_quote_rounded, color: statusColor, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'HOD Remark',
+                                    style: AppTheme.dmSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: statusColor,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    entry.hodRemark!,
+                                    style: AppTheme.dmSans(
+                                      fontSize: 13,
+                                      color: AppTheme.textSecondary,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              entry.reason,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildStatusBadge(entry.status),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 1,
-                    color: Colors.grey.shade100,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Date Range Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoChip(
-                          icon: Icons.calendar_today_rounded,
-                          label: 'From',
-                          value: _fmt(entry.fromDate),
-                          color: Colors.blue,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(Icons.arrow_forward_rounded,
-                            size: 16, color: Colors.grey.shade400),
-                      ),
-                      Expanded(
-                        child: _buildInfoChip(
-                          icon: Icons.event_rounded,
-                          label: 'To',
-                          value: _fmt(entry.toDate),
-                          color: Colors.indigo,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '$dayCount',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade800,
-                              ),
-                            ),
-                            Text(
-                              dayCount == 1 ? 'day' : 'days',
-                              style: TextStyle(
-                                  fontSize: 10, color: Colors.grey.shade500),
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
-
-                  // HOD Remark
-                  if (entry.hodRemark != null &&
-                      entry.hodRemark!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: statusColor.withAlpha((0.06 * 255).round()),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: statusColor.withAlpha((0.15 * 255).round())),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.format_quote_rounded,
-                              color: statusColor, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'HOD Remark',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusColor,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  entry.hodRemark!,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade700,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -536,32 +472,32 @@ class _StudentMedicalHistoryScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha((0.06 * 255).round()),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 11, color: color.withAlpha((0.7 * 255).round())),
+              Icon(icon, size: 11, color: color.withOpacity(0.8)),
               const SizedBox(width: 4),
               Text(
                 label,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: color.withAlpha((0.7 * 255).round()),
-                    fontWeight: FontWeight.w600),
+                style: AppTheme.dmSans(
+                  fontSize: 10,
+                  color: color.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 3),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
+            style: AppTheme.mono(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -569,88 +505,42 @@ class _StudentMedicalHistoryScreenState
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    final color = _statusColor(status);
-    final label = status[0] + status.substring(1).toLowerCase();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withAlpha((0.1 * 255).round()),
-        borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: color.withAlpha((0.25 * 255).round()), width: 1),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
+  IconData _statusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Icons.check_circle_rounded;
+      case 'REJECTED':
+        return Icons.cancel_rounded;
+      case 'PENDING':
+      default:
+        return Icons.hourglass_top_rounded;
+    }
   }
 
   Widget _buildLoadingState() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: 4,
-      itemBuilder: (context, index) => Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        height: 160,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: _buildShimmer(),
-      ),
-    );
-  }
-
-  Widget _buildShimmer() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.4, end: 1.0),
-      duration: const Duration(milliseconds: 900),
-      builder: (context, value, child) {
-        return Opacity(opacity: value, child: child);
-      },
-      onEnd: () => setState(() {}),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-                height: 12,
-                width: 120,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(6))),
-            const SizedBox(height: 12),
-            Container(
-                height: 8,
-                width: 200,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4))),
-            const Spacer(),
-            Row(children: [
-              Container(
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10))),
-              const SizedBox(width: 12),
-              Container(
-                  height: 40,
-                  width: 100,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10))),
-            ])
-          ],
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ShimmerBox(width: 120, height: 16, borderRadius: 6),
+              const SizedBox(height: 12),
+              const ShimmerBox(width: 200, height: 12, borderRadius: 4),
+              const SizedBox(height: 24),
+              Row(
+                children: const [
+                  ShimmerBox(width: 100, height: 40, borderRadius: 10),
+                  SizedBox(width: 12),
+                  ShimmerBox(width: 100, height: 40, borderRadius: 10),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -666,35 +556,35 @@ class _StudentMedicalHistoryScreenState
             Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
+                color: Colors.white.withOpacity(0.6),
                 shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: AppTheme.accentBlue.withOpacity(0.1), blurRadius: 20)],
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.medical_information_outlined,
                 size: 56,
-                color: Colors.indigo.shade300,
+                color: AppTheme.accentBlue,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               _selectedFilter == 'All'
                   ? 'No Medical Requests'
-                  : 'No ${_selectedFilter} Requests',
-              style: TextStyle(
+                  : 'No $_selectedFilter Requests',
+              style: AppTheme.sora(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _selectedFilter == 'All'
                   ? 'Your medical leave submissions\nwill appear here'
-                  : 'No requests with "${_selectedFilter}" status found',
+                  : 'No requests with "$_selectedFilter" status found',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppTheme.dmSans(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                color: AppTheme.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -702,30 +592,6 @@ class _StudentMedicalHistoryScreenState
         ),
       ),
     );
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'APPROVED':
-        return Colors.green.shade500;
-      case 'REJECTED':
-        return Colors.red.shade500;
-      case 'PENDING':
-      default:
-        return Colors.orange.shade500;
-    }
-  }
-
-  IconData _statusIcon(String status) {
-    switch (status.toUpperCase()) {
-      case 'APPROVED':
-        return Icons.check_circle_rounded;
-      case 'REJECTED':
-        return Icons.cancel_rounded;
-      case 'PENDING':
-      default:
-        return Icons.hourglass_top_rounded;
-    }
   }
 
   String _fmt(DateTime d) =>

@@ -2,8 +2,10 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Required for inputFormatters
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 
 class MedicalScreen extends StatefulWidget {
   const MedicalScreen({super.key});
@@ -77,7 +79,7 @@ class _MedicalScreenState extends State<MedicalScreen>
     if (!_validateForm()) {
       _showSnackBar(
         "Please complete all required fields",
-        Colors.orange.shade600,
+        AppTheme.accentAmber,
         Icons.warning_rounded,
       );
       return;
@@ -96,7 +98,7 @@ class _MedicalScreenState extends State<MedicalScreen>
 
       _showSnackBar(
         "Medical leave request submitted successfully!",
-        Colors.green.shade600,
+        AppTheme.accentTeal,
         Icons.check_circle_rounded,
       );
 
@@ -121,7 +123,7 @@ class _MedicalScreenState extends State<MedicalScreen>
     } catch (e) {
       _showSnackBar(
         "Failed to submit: ${e.toString()}",
-        Colors.red.shade600,
+        AppTheme.accentPink,
         Icons.error_rounded,
       );
     } finally {
@@ -165,17 +167,18 @@ class _MedicalScreenState extends State<MedicalScreen>
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
+                style: AppTheme.dmSans(
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ),
           ],
         ),
-        backgroundColor: backgroundColor,
+        backgroundColor: backgroundColor.withOpacity(0.95),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
@@ -183,21 +186,26 @@ class _MedicalScreenState extends State<MedicalScreen>
   }
 
   Future<void> _pickDate({required bool isFrom}) async {
+    // Logic Fix: Prevent negative date ranges
+    final initialFirstDate = isFrom
+        ? DateTime(2020)
+        : (_fromDate ?? DateTime(2020));
+
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isFrom
           ? (_fromDate ?? DateTime.now())
           : (_toDate ?? _fromDate ?? DateTime.now()),
-      firstDate: DateTime(2020),
+      firstDate: initialFirstDate,
       lastDate: DateTime(2030),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.indigo.shade600,
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.accentBlue,
               onPrimary: Colors.white,
               surface: Colors.white,
-              onSurface: Colors.grey.shade800,
+              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: child!,
@@ -223,8 +231,8 @@ class _MedicalScreenState extends State<MedicalScreen>
       setState(() => _currentStep++);
     } else if (!_validateStep(_currentStep)) {
       _showSnackBar(
-        "Please complete all fields in this section",
-        Colors.orange.shade600,
+        "Please complete all required fields",
+        AppTheme.accentAmber,
         Icons.warning_rounded,
       );
     }
@@ -239,101 +247,51 @@ class _MedicalScreenState extends State<MedicalScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            _buildModernAppBar(),
-            _buildStepperIndicator(),
-            Expanded(
-              child: _buildStepContent(),
-            ),
-            _buildNavigationButtons(),
-          ],
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
-      ),
-    );
-  }
-
-  // Modern App Bar
-  Widget _buildModernAppBar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade700, Colors.indigo.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.indigo.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
+        title: Text("Medical Leave", style: AppTheme.sora(fontSize: 18)),
+        centerTitle: true,
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 20.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
-                  onPressed: () => Navigator.pop(context),
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Medical Leave Application",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Step ${_currentStep + 1} of 3",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppTheme.accentBlue.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   "${(((_currentStep + 1) / 3) * 100).toInt()}%",
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: AppTheme.mono(
+                    color: AppTheme.accentBlue,
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+      body: AppBackground(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            children: [
+              const SizedBox(height: 96), // Safely clears the transparent AppBar
+              _buildStepperIndicator(),
+              Expanded(
+                child: _buildStepContent(),
+              ),
+              _buildNavigationButtons(),
             ],
           ),
         ),
@@ -341,11 +299,10 @@ class _MedicalScreenState extends State<MedicalScreen>
     );
   }
 
-  // Stepper Indicator - Mobile Optimized
+  // ── Glassmorphic Stepper ──────────────────────────────────────────
   Widget _buildStepperIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
           _buildStepCircle(0, "Duration", Icons.calendar_month_rounded),
@@ -362,52 +319,49 @@ class _MedicalScreenState extends State<MedicalScreen>
     final isActive = _currentStep == stepIndex;
     final isCompleted = _currentStep > stepIndex;
 
+    Color color;
+    if (isCompleted) {
+      color = AppTheme.accentTeal;
+    } else if (isActive) {
+      color = AppTheme.accentBlue;
+    } else {
+      color = AppTheme.textMuted.withOpacity(0.3);
+    }
+
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: isCompleted
-                  ? Colors.green.shade500
-                  : isActive
-                      ? Colors.indigo.shade600
-                      : Colors.grey.shade200,
+              color: (isActive || isCompleted) ? color : Colors.white.withOpacity(0.5),
               shape: BoxShape.circle,
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: Colors.indigo.withOpacity(0.4),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
+              border: Border.all(
+                color: (isActive || isCompleted) ? color : Colors.white,
+                width: 2,
+              ),
+              boxShadow: isActive || isCompleted
+                  ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                  : [],
             ),
             child: Icon(
               isCompleted ? Icons.check_rounded : icon,
-              color: (isActive || isCompleted) ? Colors.white : Colors.grey.shade500,
+              color: (isActive || isCompleted) ? Colors.white : AppTheme.textMuted,
               size: 20,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive
-                  ? Colors.indigo.shade600
-                  : isCompleted
-                      ? Colors.green.shade600
-                      : Colors.grey.shade600,
+            style: AppTheme.dmSans(
+              fontSize: 11,
+              fontWeight: isActive || isCompleted ? FontWeight.w700 : FontWeight.w500,
+              color: isActive || isCompleted ? AppTheme.textPrimary : AppTheme.textMuted,
             ),
             textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -416,95 +370,100 @@ class _MedicalScreenState extends State<MedicalScreen>
 
   Widget _buildStepConnector(int stepIndex) {
     final isCompleted = _currentStep > stepIndex;
-
     return Expanded(
       flex: 1,
       child: Container(
-        height: 2,
-        margin: const EdgeInsets.only(bottom: 20),
+        height: 3,
+        margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
-          color: isCompleted ? Colors.green.shade500 : Colors.grey.shade300,
+          color: isCompleted ? AppTheme.accentTeal : Colors.white.withOpacity(0.6),
           borderRadius: BorderRadius.circular(2),
         ),
       ),
     );
   }
 
-  // Step Content - Mobile Optimized
+  // ── Scrollable Content Area ───────────────────────────────────────
   Widget _buildStepContent() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
       child: SingleChildScrollView(
         key: ValueKey<int>(_currentStep),
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_currentStep == 0) _buildStep1LeaveDetails(),
             if (_currentStep == 1) _buildStep2MedicalDetails(),
             if (_currentStep == 2) _buildStep3DocumentUpload(),
-            const SizedBox(height: 90),
           ],
         ),
       ),
     );
   }
 
-  // Step 1: Leave Duration
+  // ── Step 1: Leave Duration ────────────────────────────────────────
   Widget _buildStep1LeaveDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStepTitle(
-          "Leave Duration",
-          "Choose start and end dates",
-          Icons.event_rounded,
+        _buildStepTitle("Leave Duration", "Choose start and end dates", Icons.date_range_rounded),
+        const SizedBox(height: 24),
+        GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildDateCard(isFrom: true),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(child: Divider(color: AppTheme.accentBlue.withOpacity(0.15), thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Icon(Icons.arrow_downward_rounded, size: 16, color: AppTheme.textMuted),
+                    ),
+                    Expanded(child: Divider(color: AppTheme.accentBlue.withOpacity(0.15), thickness: 1)),
+                  ],
+                ),
+              ),
+              _buildDateCard(isFrom: false),
+            ],
+          ),
         ),
-        const SizedBox(height: 18),
-        _buildDateRangeCards(),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _buildLeaveSummaryCard(),
       ],
     );
   }
 
-  // Step 2: Medical Details
+  // ── Step 2: Medical Details ───────────────────────────────────────
   Widget _buildStep2MedicalDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStepTitle(
-          "Medical Information",
-          "Provide medical details",
-          Icons.local_hospital_rounded,
-        ),
-        const SizedBox(height: 18),
+        _buildStepTitle("Medical Information", "Provide illness and doctor details", Icons.local_hospital_rounded),
+        const SizedBox(height: 24),
         _buildInputField(
           label: "Medical Reason",
           hint: "e.g., Viral fever with severe cold",
           controller: _reasonController,
-          icon: Icons.sick_rounded,
+          icon: Icons.sick_outlined,
           maxLines: 3,
           onChanged: (val) => setState(() => _reason = val),
           required: true,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _buildInputField(
           label: "Doctor's Name",
           hint: "Dr. John Smith",
           controller: _doctorNameController,
-          icon: Icons.medical_services_rounded,
+          icon: Icons.medical_services_outlined,
           onChanged: (val) => setState(() => _doctorName = val),
           required: true,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _buildInputField(
           label: "Hospital / Clinic Name",
           hint: "City General Hospital",
@@ -513,13 +472,15 @@ class _MedicalScreenState extends State<MedicalScreen>
           onChanged: (val) => setState(() => _hospitalName = val),
           required: true,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _buildInputField(
           label: "Emergency Contact",
-          hint: "+91 98765 43210",
+          hint: "10-digit mobile number",
           controller: _contactController,
-          icon: Icons.phone_rounded,
+          icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
+          maxLength: 10, // Logic Fix: Restrict to 10 digits
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Logic Fix: Only allow numbers
           onChanged: (val) => setState(() => _contactNumber = val),
           required: false,
         ),
@@ -527,115 +488,45 @@ class _MedicalScreenState extends State<MedicalScreen>
     );
   }
 
-  // Step 3: Document Upload
+  // ── Step 3: Document Upload ───────────────────────────────────────
   Widget _buildStep3DocumentUpload() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStepTitle(
-          "Medical Certificate",
-          "Upload supporting document",
-          Icons.description_rounded,
-        ),
-        const SizedBox(height: 18),
+        _buildStepTitle("Medical Certificate", "Upload the supporting document", Icons.description_outlined),
+        const SizedBox(height: 24),
         _buildDocumentUploadCard(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         _buildUploadGuidelines(),
       ],
     );
   }
 
-  // Step Title Widget - Responsive
+  // ── UI Helpers ────────────────────────────────────────────────────
   Widget _buildStepTitle(String title, String subtitle, IconData icon) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.indigo.shade500, Colors.indigo.shade700],
-            ),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.indigo.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: AppTheme.accentBlue.withOpacity(0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: AppTheme.accentBlue, size: 24),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: 0.2,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  height: 1.3,
-                ),
-              ),
+              Text(title, style: AppTheme.sora(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary)),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  // Date Range Cards - Compact
-  Widget _buildDateRangeCards() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildDateCard(isFrom: true),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Icon(
-                    Icons.arrow_downward_rounded,
-                    size: 16,
-                    color: Colors.indigo.shade400,
-                  ),
-                ),
-                Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-              ],
-            ),
-          ),
-          _buildDateCard(isFrom: false),
-        ],
-      ),
     );
   }
 
@@ -646,64 +537,50 @@ class _MedicalScreenState extends State<MedicalScreen>
 
     return InkWell(
       onTap: () => _pickDate(isFrom: isFrom),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: hasDate ? Colors.indigo.shade50 : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(10),
+          color: hasDate ? AppTheme.accentBlue.withOpacity(0.05) : Colors.white.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: hasDate ? Colors.indigo.shade300 : Colors.grey.shade300,
-            width: 1.2,
+            color: hasDate ? AppTheme.accentBlue.withOpacity(0.3) : Colors.white.withOpacity(0.6),
           ),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: hasDate ? Colors.indigo.shade100 : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
+                color: hasDate ? AppTheme.accentBlue.withOpacity(0.15) : Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.calendar_today_rounded,
-                size: 18,
-                color: hasDate ? Colors.indigo.shade700 : Colors.grey.shade500,
+                size: 20,
+                color: hasDate ? AppTheme.accentBlue : AppTheme.textMuted,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
+                  Text(label, style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textSecondary)),
+                  const SizedBox(height: 4),
                   Text(
                     hasDate
                         ? "${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}"
                         : "Select date",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: hasDate ? Colors.black87 : Colors.grey.shade400,
+                    style: AppTheme.sora(
+                      fontSize: 15,
+                      color: hasDate ? AppTheme.textPrimary : AppTheme.textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.grey.shade400,
-              size: 20,
-            ),
+            Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 22),
           ],
         ),
       ),
@@ -711,63 +588,38 @@ class _MedicalScreenState extends State<MedicalScreen>
   }
 
   String _getMonthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[month - 1];
   }
 
-  // Leave Summary Card - Compact
   Widget _buildLeaveSummaryCard() {
     if (_fromDate == null || _toDate == null) return const SizedBox.shrink();
-
     final duration = _toDate!.difference(_fromDate!).inDays + 1;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.indigo.shade50],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.indigo.shade200, width: 1.2),
-      ),
+    return GlassCard(
+      glowColor: AppTheme.accentBlue,
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(9),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(9),
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: AppTheme.accentBlue.withOpacity(0.1), blurRadius: 8)],
             ),
-            child: Icon(
-              Icons.info_outline_rounded,
-              color: Colors.indigo.shade600,
-              size: 20,
-            ),
+            child: const Icon(Icons.info_outline_rounded, color: AppTheme.accentBlue, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Total Leave Duration",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 3),
+                Text("Total Leave Duration", style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textSecondary)),
+                const SizedBox(height: 2),
                 Text(
                   "$duration ${duration == 1 ? 'day' : 'days'}",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo.shade700,
-                  ),
+                  style: AppTheme.sora(fontSize: 16, color: AppTheme.accentBlue, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -777,7 +629,6 @@ class _MedicalScreenState extends State<MedicalScreen>
     );
   }
 
-  // Input Field Widget - Compact
   Widget _buildInputField({
     required String label,
     required String hint,
@@ -787,81 +638,42 @@ class _MedicalScreenState extends State<MedicalScreen>
     TextInputType? keyboardType,
     required Function(String) onChanged,
     required bool required,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            if (required) ...[
-              const SizedBox(width: 3),
-              Text(
-                "*",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade600,
-                ),
-              ),
-            ],
-          ],
+        RichText(
+          text: TextSpan(
+            text: label,
+            style: AppTheme.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            children: [if (required) TextSpan(text: ' *', style: TextStyle(color: AppTheme.accentPink))],
+          ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(11),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: Colors.white.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.9)),
+            boxShadow: [BoxShadow(color: AppTheme.accentBlue.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: TextField(
             controller: controller,
             onChanged: onChanged,
             maxLines: maxLines,
+            maxLength: maxLength,
+            inputFormatters: inputFormatters,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: AppTheme.dmSans(fontSize: 15),
             decoration: InputDecoration(
+              counterText: "", // Hides the "0/10" text at the bottom
               hintText: hint,
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade400,
-              ),
-              prefixIcon: Icon(icon, color: Colors.indigo.shade400, size: 20),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide:
-                    BorderSide(color: Colors.indigo.shade400, width: 1.8),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 13,
-              ),
+              hintStyle: AppTheme.dmSans(color: AppTheme.textMuted, fontSize: 14),
+              prefixIcon: Icon(icon, color: AppTheme.accentBlue, size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ),
@@ -869,228 +681,89 @@ class _MedicalScreenState extends State<MedicalScreen>
     );
   }
 
-  // Document Upload Card - Mobile Optimized
   Widget _buildDocumentUploadCard() {
+    final hasFile = _selectedFile != null;
+    final color = hasFile ? AppTheme.accentTeal : AppTheme.accentBlue;
+
     return GestureDetector(
       onTap: _pickFile,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _selectedFile != null
-                ? Colors.green.shade400
-                : Colors.grey.shade300,
-            width: 1.8,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _selectedFile != null
-                  ? Colors.green.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: _selectedFile != null
-            ? _buildUploadedFileView()
-            : _buildUploadPromptView(),
-      ),
-    );
-  }
-
-  Widget _buildUploadedFileView() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.center,
+      child: GlassCard(
+        borderColor: hasFile ? AppTheme.accentTeal.withOpacity(0.4) : null,
+        glowColor: hasFile ? AppTheme.accentTeal : AppTheme.accentBlue,
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+        child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: color.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.picture_as_pdf_rounded,
-                color: Colors.green.shade600,
-                size: 36,
+                hasFile ? Icons.task_rounded : Icons.cloud_upload_outlined,
+                size: 40,
+                color: color,
               ),
             ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(3),
+            const SizedBox(height: 16),
+            Text(
+              hasFile ? "Document Ready" : "Upload Medical Certificate",
+              style: AppTheme.sora(fontSize: 16, fontWeight: FontWeight.w700, color: hasFile ? color : AppTheme.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasFile ? _selectedFile!.path.split("/").last : "Tap to browse PDF files",
+              style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textSecondary),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (hasFile) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade600,
-                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white),
                 ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 12,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded, size: 14, color: AppTheme.textSecondary),
+                    const SizedBox(width: 6),
+                    Text("Tap to change", style: AppTheme.dmSans(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
+                  ],
                 ),
               ),
-            ),
+            ]
           ],
         ),
-        const SizedBox(height: 11),
-        Text(
-          "Document Uploaded",
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Colors.green.shade700,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          _selectedFile!.path.split("/").last,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.green.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade200),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.refresh_rounded, size: 14, color: Colors.green.shade700),
-              const SizedBox(width: 5),
-              Text(
-                "Tap to replace",
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green.shade700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUploadPromptView() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.indigo.shade50, Colors.blue.shade50],
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.cloud_upload_rounded,
-            size: 38,
-            color: Colors.indigo.shade400,
-          ),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          "Upload Medical Certificate",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          "Tap to select PDF document",
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.indigo.shade600, Colors.indigo.shade700],
-            ),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.indigo.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.upload_rounded, color: Colors.white, size: 16),
-              SizedBox(width: 7),
-              Text(
-                "Select PDF",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Upload Guidelines - Compact
-  Widget _buildUploadGuidelines() {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: Colors.amber.shade200, width: 1.2),
       ),
+    );
+  }
+
+  Widget _buildUploadGuidelines() {
+    return GlassCard(
+      color: AppTheme.accentAmber.withOpacity(0.05),
+      borderColor: AppTheme.accentAmber.withOpacity(0.2),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info_rounded, color: Colors.amber.shade700, size: 17),
+              const Icon(Icons.info_outline_rounded, color: AppTheme.accentAmber, size: 18),
               const SizedBox(width: 8),
-              Text(
-                "Document Guidelines",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade900,
-                ),
-              ),
+              Text("Document Guidelines", style: AppTheme.sora(fontSize: 14, color: AppTheme.accentAmber, fontWeight: FontWeight.w700)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _buildGuidelineItem("PDF format only (max 5MB)"),
-          _buildGuidelineItem("Clear and readable copy"),
+          _buildGuidelineItem("Must be a clear and readable copy"),
           _buildGuidelineItem("Doctor's signature required"),
-          _buildGuidelineItem("Valid letterhead needed"),
+          _buildGuidelineItem("Hospital/Clinic letterhead needed"),
         ],
       ),
     );
@@ -1098,136 +771,74 @@ class _MedicalScreenState extends State<MedicalScreen>
 
   Widget _buildGuidelineItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 3),
+            padding: const EdgeInsets.only(top: 6),
             child: Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.amber.shade700,
-                shape: BoxShape.circle,
-              ),
+              width: 5, height: 5,
+              decoration: const BoxDecoration(color: AppTheme.accentAmber, shape: BoxShape.circle),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.amber.shade900,
-                height: 1.3,
-              ),
-            ),
-          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: AppTheme.dmSans(fontSize: 13, color: AppTheme.textPrimary.withOpacity(0.7)))),
         ],
       ),
     );
   }
 
-  // Navigation Buttons - Mobile Optimized
+  // ── Bottom Navigation ─────────────────────────────────────────────
   Widget _buildNavigationButtons() {
     final isLastStep = _currentStep == 2;
     final canProceed = _validateStep(_currentStep);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -3),
-          ),
-        ],
+        color: Colors.white.withOpacity(0.55),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.8), width: 1.5)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            if (_currentStep > 0)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _previousStep,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.indigo.shade600,
-                    side: BorderSide(color: Colors.indigo.shade300, width: 1.8),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(11),
+      child: Row(
+        children: [
+          if (_currentStep > 0) ...[
+            Expanded(
+              child: GestureDetector(
+                onTap: _previousStep,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: AppTheme.accentBlue.withOpacity(0.3)),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.arrow_back_rounded, size: 18, color: AppTheme.accentBlue),
+                        const SizedBox(width: 8),
+                        Text("Back", style: AppTheme.dmSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.accentBlue)),
+                      ],
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.arrow_back_rounded, size: 18),
-                      SizedBox(width: 6),
-                      Text(
-                        "Previous",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-            if (_currentStep > 0) const SizedBox(width: 10),
-            Expanded(
-              flex: _currentStep == 0 ? 1 : 1,
-              child: ElevatedButton(
-                onPressed: (submitting || !canProceed)
-                    ? null
-                    : (isLastStep ? _submit : _nextStep),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo.shade600,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  disabledForegroundColor: Colors.grey.shade500,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  elevation: canProceed ? 1.5 : 0,
-                ),
-                child: submitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.3,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isLastStep ? "Submit" : "Continue",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            isLastStep
-                                ? Icons.send_rounded
-                                : Icons.arrow_forward_rounded,
-                            size: 18,
-                          ),
-                        ],
-                      ),
               ),
             ),
+            const SizedBox(width: 12),
           ],
-        ),
+          Expanded(
+            flex: 2,
+            child: GlowButton(
+              label: isLastStep ? "Submit Request" : "Continue",
+              accent: isLastStep ? AppTheme.accentTeal : AppTheme.accentBlue,
+              isLoading: submitting,
+              icon: isLastStep ? null : const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+              onPressed: canProceed ? (isLastStep ? _submit : _nextStep) : null,
+            ),
+          ),
+        ],
       ),
     );
   }

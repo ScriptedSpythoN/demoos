@@ -204,7 +204,7 @@ class _AppLogo extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'EduFlow',
+          'EduPiece',
           style: AppTheme.sora(
             fontSize: 18,
             fontWeight: FontWeight.w800,

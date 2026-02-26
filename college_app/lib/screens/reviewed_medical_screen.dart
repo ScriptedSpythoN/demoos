@@ -50,7 +50,8 @@ class _ReviewedMedicalScreenState extends State<ReviewedMedicalScreen> {
       if (status == 'ALL') {
         _filteredReviewed = _allReviewed;
       } else {
-        _filteredReviewed = _allReviewed.where((entry) => entry.status == status).toList();
+        _filteredReviewed =
+            _allReviewed.where((entry) => entry.status == status).toList();
       }
     });
   }
@@ -58,7 +59,7 @@ class _ReviewedMedicalScreenState extends State<ReviewedMedicalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Essential for AppBackground to show through
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text('Reviewed Leaves', style: AppTheme.sora(fontSize: 18)),
@@ -72,22 +73,26 @@ class _ReviewedMedicalScreenState extends State<ReviewedMedicalScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 'ALL', 
-                child: Text('Show All', style: AppTheme.dmSans(fontWeight: FontWeight.w600)),
+                value: 'ALL',
+                child: Text('Show All',
+                    style: AppTheme.dmSans(fontWeight: FontWeight.w600)),
               ),
               PopupMenuItem(
-                value: 'APPROVED', 
-                child: Text('Approved Only', style: AppTheme.dmSans(color: AppTheme.accentTeal, fontWeight: FontWeight.w600)),
+                value: 'APPROVED',
+                child: Text('Approved Only',
+                    style: AppTheme.dmSans(
+                        color: AppTheme.accentTeal, fontWeight: FontWeight.w600)),
               ),
               PopupMenuItem(
-                value: 'REJECTED', 
-                child: Text('Rejected Only', style: AppTheme.dmSans(color: AppTheme.accentPink, fontWeight: FontWeight.w600)),
+                value: 'REJECTED',
+                child: Text('Rejected Only',
+                    style: AppTheme.dmSans(
+                        color: AppTheme.accentPink, fontWeight: FontWeight.w600)),
               ),
             ],
           )
         ],
       ),
-      // AppBackground applies the beautiful white-to-blue gradient and orbs
       body: AppBackground(
         child: SafeArea(
           child: _isLoading
@@ -100,50 +105,67 @@ class _ReviewedMedicalScreenState extends State<ReviewedMedicalScreen> {
                   itemCount: _filteredReviewed.length,
                   itemBuilder: (context, index) {
                     final entry = _filteredReviewed[index];
-                    
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      // GlassCard gives it the frosted border and subtle shadow
                       child: GlassCard(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              // ✅ FIX: crossAxisAlignment ensures the badge
+                              // stays top-aligned if roll text wraps to 2 lines
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Roll: ${entry.studentRollNo}',
-                                  style: AppTheme.sora(fontSize: 16, fontWeight: FontWeight.w700),
+                                // ✅ FIX: Expanded prevents the long UUID from
+                                // overflowing the Row and causing the yellow stripe
+                                Expanded(
+                                  child: Text(
+                                    'Roll: ${entry.studentRollNo}',
+                                    style: AppTheme.sora(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    // Wraps onto a second line if still too long
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  ),
                                 ),
-                                // Automatically pulls your theme's green/red based on status
-                                StatusBadge(entry.status), 
+                                const SizedBox(width: 8),
+                                // StatusBadge is now right-aligned and never clipped
+                                StatusBadge(entry.status),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Reason: ${entry.reason}', 
+                              'Reason: ${entry.reason}',
                               style: AppTheme.dmSans(color: AppTheme.textSecondary),
                             ),
-                            if (entry.hodRemark != null && entry.hodRemark!.isNotEmpty) ...[
+                            if (entry.hodRemark != null &&
+                                entry.hodRemark!.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: AppTheme.accentViolet.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppTheme.accentViolet.withOpacity(0.1)),
+                                  border: Border.all(
+                                      color: AppTheme.accentViolet.withOpacity(0.1)),
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.format_quote_rounded, size: 14, color: AppTheme.accentViolet.withOpacity(0.7)),
+                                    Icon(Icons.format_quote_rounded,
+                                        size: 14,
+                                        color: AppTheme.accentViolet.withOpacity(0.7)),
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'HOD Remark: ${entry.hodRemark}', 
+                                        'HOD Remark: ${entry.hodRemark}',
                                         style: AppTheme.dmSans(
-                                          color: AppTheme.textPrimary.withOpacity(0.8), 
+                                          color:
+                                              AppTheme.textPrimary.withOpacity(0.8),
                                           fontStyle: FontStyle.italic,
                                           fontSize: 12,
                                         ),

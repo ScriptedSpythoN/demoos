@@ -467,7 +467,8 @@ class _AnnouncementListScreenState extends State<AnnouncementListScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 22, 20, 8),
+      // FIXED: Increased top padding from 22 to 100 to clear the DashboardTopBar perfectly.
+      padding: const EdgeInsets.fromLTRB(24, 100, 20, 8),
       child: Row(
         children: [
           Column(
