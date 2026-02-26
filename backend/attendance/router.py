@@ -147,7 +147,7 @@ def submit_attendance(
 
 @router.get("/student/stats/{student_id}")
 def get_student_stats(student_id: str, db: Session = Depends(get_db)):
-    # Total classes (Count records for this student)
+    # Total classes
     total = db.exec(
         select(func.count(AttendanceRecord.id))
         .where(AttendanceRecord.student_roll_no == student_id)
@@ -162,10 +162,38 @@ def get_student_stats(student_id: str, db: Session = Depends(get_db)):
 
     percentage = round((present / total * 100), 1) if total > 0 else 0.0
 
+    # Subject-wise attendance calculation
+    statement = (
+        select(AttendanceSession.subject_id, AttendanceRecord.status)
+        .join(AttendanceRecord, AttendanceSession.id == AttendanceRecord.session_id)
+        .where(AttendanceRecord.student_roll_no == student_id)
+    )
+    records = db.exec(statement).all()
+    
+    subject_stats = {}
+    for subj_code, status in records:
+        if subj_code not in subject_stats:
+            subject_stats[subj_code] = {"total": 0, "present": 0}
+        subject_stats[subj_code]["total"] += 1
+        if status == AttendanceStatus.PRESENT:
+            subject_stats[subj_code]["present"] += 1
+            
+    subjects_list = []
+    for code, data in subject_stats.items():
+        pct = (data["present"] / data["total"]) * 100 if data["total"] > 0 else 0
+        subjects_list.append({
+            "code": code,
+            "name": f"Subject {code}", # Fallback name, can be joined with Subjects table later
+            "percentage": round(pct, 1),
+            "attended": data["present"],
+            "total": data["total"]
+        })
+
     return {
         "percentage": percentage,
         "total_classes": total,
         "present_count": present,
         "absent_count": total - present,
-        "is_shortage": percentage < 75.0
+        "is_shortage": percentage < 75.0,
+        "subjects": subjects_list
     }

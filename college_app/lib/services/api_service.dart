@@ -479,7 +479,22 @@ class ApiService {
   // ─────────────────────────────────────────────────────────────────
   // OTHER METHODS (ATTENDANCE, MEDICAL, STATS)
   // ─────────────────────────────────────────────────────────────────
-
+  
+  static Future<Map<String, dynamic>> fetchStudentDashboard(String studentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print('🔥 Fetch Student Dashboard Error: $e');
+      return {};
+    }
+  }
   static Future<List<Map<String, dynamic>>> fetchTeacherSchedule() async {
     if (currentUserId == null) return [];
     try {
