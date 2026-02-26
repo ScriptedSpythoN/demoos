@@ -594,6 +594,29 @@ class ApiService {
     }
     throw Exception('Failed to fetch reviewed medical requests');
   }
+  // ─────────────────────────────────────────────────────────────────
+  // DEPARTMENT STATS
+  // ─────────────────────────────────────────────────────────────────
+  static Future<Map<String, int>> fetchDepartmentStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/stats'),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'students': data['students'] ?? 0,
+          'faculty': data['faculty'] ?? 0,
+        };
+      }
+      return {'students': 0, 'faculty': 0};
+    } catch (e) {
+      print('🔥 Fetch Stats Error: $e');
+      return {'students': 0, 'faculty': 0};
+    }
+  }
 
   // Add inside ApiService class
   static Future<List<dynamic>> fetchDepartmentAnalytics(String departmentId) async {

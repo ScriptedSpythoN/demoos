@@ -859,13 +859,38 @@ class _HoDAnnouncementsTabState extends State<_HoDAnnouncementsTab> {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  TAB 3 — Profile  (unchanged)
+//  TAB 3 — Profile  (DYNAMICALLY WIRED)
 // ─────────────────────────────────────────────────────────────────
-class _HoDProfileTab extends StatelessWidget {
+class _HoDProfileTab extends StatefulWidget {
   final String departmentId;
   final VoidCallback onLogout;
-  const _HoDProfileTab(
-      {required this.departmentId, required this.onLogout});
+  const _HoDProfileTab({required this.departmentId, required this.onLogout});
+
+  @override
+  State<_HoDProfileTab> createState() => _HoDProfileTabState();
+}
+
+class _HoDProfileTabState extends State<_HoDProfileTab> {
+  int _studentCount = 0;
+  int _facultyCount = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final stats = await ApiService.fetchDepartmentStats();
+    if (mounted) {
+      setState(() {
+        _studentCount = stats['students'] ?? 0;
+        _facultyCount = stats['faculty'] ?? 0;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -903,7 +928,7 @@ class _HoDProfileTab extends StatelessWidget {
                 style: AppTheme.sora(
                     fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(departmentId,
+            Text(widget.departmentId,
                 style: AppTheme.dmSans(
                     fontSize: 14, color: AppTheme.textSecondary)),
             const SizedBox(height: 12),
@@ -914,18 +939,33 @@ class _HoDProfileTab extends StatelessWidget {
         GlassCard(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
-              _row(Icons.school_rounded, 'Department', departmentId,
+              _row(Icons.school_rounded, 'Department', widget.departmentId,
                   AppTheme.accentViolet),
-              _row(Icons.people_rounded, 'Total Students',
-                  '173 Students', AppTheme.accentViolet),
-              _row(Icons.person_rounded, 'Faculty Members',
-                  '8 Faculty', AppTheme.accentViolet),
+              
+              // Animated transition between loading and showing data
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _isLoading 
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: CircularProgressIndicator(color: AppTheme.accentViolet),
+                    )
+                  : Column(
+                      key: const ValueKey('stats'),
+                      children: [
+                        _row(Icons.people_rounded, 'Total Students',
+                            '$_studentCount Students', AppTheme.accentViolet),
+                        _row(Icons.person_rounded, 'Faculty Members',
+                            '$_facultyCount Faculty', AppTheme.accentViolet),
+                      ],
+                    ),
+              )
             ])),
         const SizedBox(height: 12),
         GlowButton(
             label: 'Sign Out',
             accent: AppTheme.accentPink,
-            onPressed: onLogout,
+            onPressed: widget.onLogout,
             icon: const Icon(Icons.logout_rounded,
                 color: Colors.white, size: 18)),
       ]),

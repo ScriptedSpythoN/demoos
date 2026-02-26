@@ -101,3 +101,13 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "full_name": user.full_name,
         "user_id": str(user.id)
     }
+@router.get("/stats")
+def get_department_stats(db: Session = Depends(get_db)):
+    # Fetching total students and faculty from the User table based on their role
+    students = db.exec(select(User).where(User.role == "STUDENT")).all()
+    faculty = db.exec(select(User).where(User.role == "TEACHER")).all()
+    
+    return {
+        "students": len(students),
+        "faculty": len(faculty)
+    }
