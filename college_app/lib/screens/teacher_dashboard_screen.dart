@@ -44,8 +44,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   void _logout() {
     ApiService.logout();
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false);
   }
 
   @override

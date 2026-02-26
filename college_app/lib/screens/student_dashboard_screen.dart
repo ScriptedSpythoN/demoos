@@ -45,8 +45,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   void _logout() {
     ApiService.logout();
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false);
   }
 
   void _switchTab(int index) {
@@ -118,72 +120,78 @@ class _StudentHomeTabState extends State<_StudentHomeTab>
   late AnimationController _staggerCtrl;
   late AnimationController _numberCtrl;
 
-  bool _isLoading = true;
-  double _overallPct = 0.0;
-  List<Map<String, dynamic>> _subjects = [];
+  final List<Map<String, dynamic>> _subjects = [
+    {
+      'code': 'CN',
+      'name': 'Computer Networks',
+      'percentage': 82.5,
+      'color': AppTheme.accentBlue
+    },
+    {
+      'code': 'CD',
+      'name': 'Compiler Design',
+      'percentage': 78.0,
+      'color': AppTheme.accentViolet
+    },
+    {
+      'code': 'OS',
+      'name': 'Operating System',
+      'percentage': 85.5,
+      'color': const Color(0xFF3B82F6)
+    },
+    {
+      'code': 'ESSP',
+      'name': 'Enhancing Soft Skills & Personality',
+      'percentage': 91.0,
+      'color': AppTheme.accentTeal
+    },
+    {
+      'code': 'ML',
+      'name': 'Machine Learning',
+      'percentage': 68.5,
+      'color': AppTheme.accentPink
+    },
+    {
+      'code': 'DLD',
+      'name': 'Digital Logic Design',
+      'percentage': 72.0,
+      'color': AppTheme.accentAmber
+    },
+  ];
 
   final List<Map<String, dynamic>> _schedule = [
-    { 'subject': 'Computer Networks', 'code': 'CN', 'time': '09:40', 'room': 'N-206', 'faculty': 'Dr. Niroj pani' },
-    { 'subject': 'Machine Learning', 'code': 'ML', 'time': '10:30', 'room': 'N-205', 'faculty': 'Prof. M. Srinivas' },
-    { 'subject': 'Operating System', 'code': 'OS', 'time': '11:20', 'room': 'N-206', 'faculty': 'Dr. Dillip kumar sahoo' },
+    {
+      'subject': 'Computer Networks',
+      'code': 'CN',
+      'time': '09:00',
+      'room': 'LH-2',
+      'faculty': 'Dr. Sharma'
+    },
+    {
+      'subject': 'Machine Learning',
+      'code': 'ML',
+      'time': '11:00',
+      'room': 'LH-4',
+      'faculty': 'Prof. Gupta'
+    },
+    {
+      'subject': 'Operating System',
+      'code': 'OS',
+      'time': '14:00',
+      'room': 'LH-1',
+      'faculty': 'Dr. Patel'
+    },
   ];
 
   @override
   void initState() {
     super.initState();
     _staggerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900));
+        vsync: this, duration: const Duration(milliseconds: 900))
+      ..forward();
     _numberCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    final studentId = ApiService.currentUserId ?? '2301105277';
-    final data = await ApiService.fetchStudentDashboard(studentId);
-
-    if (!mounted) return;
-
-    setState(() {
-      final List subjectsData = data['subjects'] ?? [];
-
-      if (subjectsData.isEmpty) {
-        // BEAUTIFUL FALLBACK: Keeps the UI looking great during demos if the DB is empty
-        _overallPct = 75.0;
-        _subjects = [
-          {'code': 'CN', 'name': 'Computer Networks', 'percentage': 82.5, 'color': AppTheme.accentBlue, 'attended': 33, 'total': 40},
-          {'code': 'CD', 'name': 'Compiler Design', 'percentage': 78.0, 'color': const Color.fromARGB(255, 252, 236, 92), 'attended': 31, 'total': 40},
-          {'code': 'OS', 'name': 'Operating System', 'percentage': 25.0, 'color': const Color.fromARGB(255, 177, 0, 0), 'attended': 10, 'total': 40},
-          {'code': 'ML', 'name': 'Machine Learning', 'percentage': 50.0, 'color': const Color.fromARGB(255, 221, 68, 3), 'attended': 20, 'total': 40},
-          {'code': 'CC', 'name': 'Cloud Computing', 'percentage': 75.0, 'color': const Color.fromARGB(255, 7, 157, 162), 'attended': 30, 'total': 40},
-          {'code': 'ESSP', 'name': 'Enhancing Soft Skills', 'percentage': 91.0, 'color': AppTheme.accentTeal, 'attended': 36, 'total': 40},
-        ];
-      } else {
-        _overallPct = (data['percentage'] ?? 0.0).toDouble();
-        final colors = [AppTheme.accentBlue, AppTheme.accentViolet, const Color(0xFF3B82F6), AppTheme.accentTeal, AppTheme.accentPink, AppTheme.accentAmber];
-
-        _subjects = subjectsData.asMap().entries.map((e) {
-          final i = e.key;
-          final subj = e.value;
-          return {
-            'code': subj['code'],
-            'name': subj['name'],
-            'percentage': (subj['percentage'] ?? 0).toDouble(),
-            'color': colors[i % colors.length], // Dynamic role-compliant colors
-            'attended': subj['attended'] ?? 0,
-            'total': subj['total'] ?? 0,
-          };
-        }).toList();
-      }
-      _isLoading = false;
-    });
-
-    _staggerCtrl.reset();
-    _numberCtrl.reset();
-    _staggerCtrl.forward();
-    _numberCtrl.forward();
+        vsync: this, duration: const Duration(milliseconds: 1200))
+      ..forward();
   }
 
   @override
@@ -192,6 +200,11 @@ class _StudentHomeTabState extends State<_StudentHomeTab>
     _numberCtrl.dispose();
     super.dispose();
   }
+
+  double get _overallPct => _subjects.isEmpty
+      ? 0
+      : _subjects.fold<double>(0, (s, e) => s + (e['percentage'] as double)) /
+          _subjects.length;
 
   Color _colorForPct(double p) {
     if (p >= 75) return AppTheme.accentTeal;
@@ -204,7 +217,13 @@ class _StudentHomeTabState extends State<_StudentHomeTab>
     return RefreshIndicator(
       color: AppTheme.accentBlue,
       backgroundColor: Colors.white,
-      onRefresh: _loadData, // Real API Pull-to-Refresh action wired!
+      onRefresh: () async {
+        _staggerCtrl.reset();
+        _numberCtrl.reset();
+        await Future.delayed(const Duration(milliseconds: 80));
+        _staggerCtrl.forward();
+        _numberCtrl.forward();
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics()),
@@ -660,8 +679,8 @@ class _StudentHomeTabState extends State<_StudentHomeTab>
                       : 'REJECTED'),
               const SizedBox(height: 24),
               Row(children: [
-                _sheetStat('Attended', '${sub['attended'] ?? '--'}', accent),
-                _sheetStat('Total', '${sub['total'] ?? '--'}', accent),
+                _sheetStat('Attended', '33', accent),
+                _sheetStat('Total', '40', accent),
                 _sheetStat('Minimum', '75%', accent),
               ]),
               const SizedBox(height: 24),
