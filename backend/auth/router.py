@@ -117,7 +117,7 @@ def request_password_reset(
         return {"success": True, "message": "If the ID exists, an OTP has been sent."}
 
     # 2. Generate a 6-digit OTP
-    otp = str(random.randint(100000, 999999))
+    otp = str(random.randint(1000, 9999))
     temp_otp_store[payload.username] = otp
 
     # 3. In a real app, you would send an email here using smtplib or a service like SendGrid
