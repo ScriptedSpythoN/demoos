@@ -43,9 +43,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from database import get_db
 from auth.models import User
-from auth.schemas import UserCreate, LoginRequest, TokenResponse, ForgotPasswordRequest, VerifyOTPRequest, ResetPasswordRequest
+from auth.schemas import UserCreate, LoginRequest, TokenResponse, ForgotPasswordRequest, VerifyOTPRequest, ResetPasswordRequest, ChangePasswordRequest
 from students.models import Student
 from core.security import verify_password, create_access_token, get_password_hash
+from core.dependencies import get_current_user
 import random
 router = APIRouter(tags=["Auth"])
 
@@ -175,3 +176,22 @@ def get_department_stats(db: Session = Depends(get_db)):
         "students": len(students),
         "faculty": len(faculty)
     }
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Verify the user typed their current password correctly
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password"
+        )
+    
+    # 2. Hash and save the new password
+    current_user.password_hash = get_password_hash(payload.new_password)
+    db.add(current_user)
+    db.commit()
+    
+    return {"success": True, "message": "Password changed successfully"}

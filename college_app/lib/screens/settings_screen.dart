@@ -287,7 +287,7 @@ class _SettingsChangePasswordScreenState extends State<SettingsChangePasswordScr
     super.dispose();
   }
 
-  Future<void> _handleSubmit() async {
+ Future<void> _handleSubmit() async {
     if (_currentCtrl.text.isEmpty ||
         _newCtrl.text.isEmpty ||
         _confirmCtrl.text.isEmpty) {
@@ -306,62 +306,72 @@ class _SettingsChangePasswordScreenState extends State<SettingsChangePasswordScr
     }
 
     setState(() => _saving = true);
-    // TODO: await ApiService.changePassword(current, newPass)
-    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    // 🔥 REAL API CALL 
+    final success = await ApiService.changePassword(
+      _currentCtrl.text, 
+      _newCtrl.text
+    );
+    
+    await Future.delayed(const Duration(milliseconds: 600)); // Smooth UX delay
     if (!mounted) return;
     setState(() => _saving = false);
 
-    // Show success dialog — stay on same screen
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppTheme.bgSecondary,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 60, height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _accent.withOpacity(0.12),
-              border:
-                  Border.all(color: _accent.withOpacity(0.40), width: 1.5),
-            ),
-            child: Icon(Icons.check_circle_rounded,
-                color: _accent, size: 30),
-          ),
-          const SizedBox(height: 16),
-          Text('Password Changed\nSuccessfully',
-              textAlign: TextAlign.center,
-              style: AppTheme.sora(
-                  fontSize: 17, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: _accent.withOpacity(0.12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+    if (success) {
+      // Show success dialog — stay on same screen
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          backgroundColor: AppTheme.bgSecondary,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 60, height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _accent.withOpacity(0.12),
+                border:
+                    Border.all(color: _accent.withOpacity(0.40), width: 1.5),
               ),
-              onPressed: () {
-                Navigator.pop(context); // close dialog, stay on screen
-                _currentCtrl.clear();
-                _newCtrl.clear();
-                _confirmCtrl.clear();
-              },
-              child: Text('OK',
-                  style: AppTheme.dmSans(
-                      fontSize: 14,
-                      color: _accent,
-                      fontWeight: FontWeight.w700)),
+              child: Icon(Icons.check_circle_rounded,
+                  color: _accent, size: 30),
             ),
-          ),
-        ]),
-      ),
-    );
+            const SizedBox(height: 16),
+            Text('Password Changed\nSuccessfully',
+                textAlign: TextAlign.center,
+                style: AppTheme.sora(
+                    fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: _accent.withOpacity(0.12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () {
+                  Navigator.pop(context); // close dialog, stay on screen
+                  _currentCtrl.clear();
+                  _newCtrl.clear();
+                  _confirmCtrl.clear();
+                },
+                child: Text('OK',
+                    style: AppTheme.dmSans(
+                        fontSize: 14,
+                        color: _accent,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ]),
+        ),
+      );
+    } else {
+      _snack('Failed to update. Please check your current password.', isError: true);
+    }
   }
 
   void _snack(String msg, {bool isError = false}) {

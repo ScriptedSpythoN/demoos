@@ -9,9 +9,9 @@
 <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS"/>
 
     <application
-        android:label="college_app"
+        android:label="EduPiece"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
