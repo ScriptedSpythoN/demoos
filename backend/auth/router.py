@@ -43,10 +43,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from database import get_db
 from auth.models import User
-from auth.schemas import UserCreate
+from auth.schemas import UserCreate, LoginRequest, TokenResponse, ForgotPasswordRequest, VerifyOTPRequest, ResetPasswordRequest
 from students.models import Student
 from core.security import verify_password, create_access_token, get_password_hash
-
+import random
 router = APIRouter(tags=["Auth"])
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -101,6 +101,70 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "full_name": user.full_name,
         "user_id": str(user.id)
     }
+# Temporary in-memory store for OTPs. 
+# In production, use Redis with an expiration time.
+temp_otp_store = {}
+
+@router.post("/forgot-password")
+def request_password_reset(
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    # 1. Verify user exists
+    user = db.exec(select(User).where(User.username == payload.username)).first()
+    if not user:
+        # We return a generic message to prevent username enumeration attacks
+        return {"success": True, "message": "If the ID exists, an OTP has been sent."}
+
+    # 2. Generate a 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+    temp_otp_store[payload.username] = otp
+
+    # 3. In a real app, you would send an email here using smtplib or a service like SendGrid
+    print(f"📧 [MOCK EMAIL] To: {user.email or payload.username} | Subject: Password Reset | Body: Your OTP is {otp}")
+
+    return {"success": True, "message": "OTP sent successfully."}
+
+@router.post("/verify-otp")
+def verify_otp(payload: VerifyOTPRequest):
+    stored_otp = temp_otp_store.get(payload.username)
+    
+    if stored_otp and stored_otp == payload.otp:
+        return {"success": True, "message": "OTP verified"}
+        
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid or expired OTP"
+    )
+
+@router.post("/reset-password")
+def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    # 1. Double-check the OTP before allowing the reset
+    stored_otp = temp_otp_store.get(payload.username)
+    if not stored_otp or stored_otp != payload.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session or OTP"
+        )
+
+    # 2. Fetch the user
+    user = db.exec(select(User).where(User.username == payload.username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 3. Update the password
+    user.password_hash = get_password_hash(payload.new_password)
+    db.add(user)
+    db.commit()
+
+    # 4. Clear the OTP so it can't be reused
+    del temp_otp_store[payload.username]
+
+    return {"success": True, "message": "Password reset successfully"}
+
 @router.get("/stats")
 def get_department_stats(db: Session = Depends(get_db)):
     # Fetching total students and faculty from the User table based on their role

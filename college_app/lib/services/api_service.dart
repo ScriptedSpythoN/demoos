@@ -475,7 +475,55 @@ class ApiService {
     currentUserId = null;
     await _storage.delete(key: 'auth_token');
   }
+  // ─────────────────────────────────────────────────────────────────
+  // PASSWORD RESET METHODS
+  // ─────────────────────────────────────────────────────────────────
 
+  static Future<bool> requestPasswordReset(String username) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('🔥 Request Reset Error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> verifyOtp(String username, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'otp': otp}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('🔥 Verify OTP Error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> resetPassword(String username, String otp, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'otp': otp,
+          'new_password': newPassword,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('🔥 Reset Password Error: $e');
+      return false;
+    }
+  }
   // ─────────────────────────────────────────────────────────────────
   // OTHER METHODS (ATTENDANCE, MEDICAL, STATS)
   // ─────────────────────────────────────────────────────────────────

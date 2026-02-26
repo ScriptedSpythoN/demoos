@@ -43,3 +43,15 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
+
+class ForgotPasswordRequest(BaseModel):
+    username: str  # Roll No or Faculty ID
+
+class VerifyOTPRequest(BaseModel):
+    username: str
+    otp: str
+
+class ResetPasswordRequest(BaseModel):
+    username: str
+    otp: str
+    new_password: str

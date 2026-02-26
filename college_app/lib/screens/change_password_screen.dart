@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'forgot_password_screen.dart' show FpGlassField, FpActionButton;
 import 'login_screen.dart';
@@ -11,7 +12,8 @@ import 'login_screen.dart';
 // ─────────────────────────────────────────────────────────────────
 class ChangePasswordScreen extends StatefulWidget {
   final String uniqueId;
-  const ChangePasswordScreen({super.key, required this.uniqueId});
+  final String otp;
+  const ChangePasswordScreen({super.key, required this.uniqueId, required this.otp});
 
   @override
   State<ChangePasswordScreen> createState() =>
@@ -22,7 +24,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     with TickerProviderStateMixin {
 
   // ── Controllers ───────────────────────────────────────────────
-  final _currentPassCtrl = TextEditingController();
   final _newPassCtrl     = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
 
@@ -112,7 +113,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     _glowCtrl.dispose();
     _shakeCtrl.dispose();
     _successCtrl.dispose();
-    _currentPassCtrl.dispose();
     _newPassCtrl.dispose();
     _confirmPassCtrl.dispose();
     super.dispose();
@@ -160,12 +160,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   }
 
   // ── Submit handler ─────────────────────────────────────────────
+  
   Future<void> _handleSubmit() async {
-    final current  = _currentPassCtrl.text;
     final newPass  = _newPassCtrl.text;
     final confirm  = _confirmPassCtrl.text;
 
-    if (current.isEmpty || newPass.isEmpty || confirm.isEmpty) {
+    if (newPass.isEmpty || confirm.isEmpty) {
       _triggerShake();
       _snack('All fields are required.', isError: true);
       return;
@@ -185,33 +185,40 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     }
 
     setState(() => _submitting = true);
-    // TODO: Replace with actual API call:
-    // await ApiService.changePassword(
-    //   uniqueId: widget.uniqueId,
-    //   currentPassword: current,
-    //   newPassword: newPass,
-    // );
-    await Future.delayed(const Duration(milliseconds: 1300));
-    if (!mounted) return;
-
-    setState(() { _submitting = false; _showSuccess = true; });
-    _successCtrl.forward();
-
-    // Redirect to LoginScreen after brief success display
-    await Future.delayed(const Duration(milliseconds: 1600));
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 420),
-        pageBuilder: (_, __, ___) => const LoginScreen(),
-        transitionsBuilder: (_, anim, __, child) => FadeTransition(
-          opacity: anim, child: child),
-      ),
-      (route) => false,
+    
+    // REAL API CALL
+    final success = await ApiService.resetPassword(
+      widget.uniqueId, 
+      widget.otp, 
+      newPass
     );
-  }
+    
+    await Future.delayed(const Duration(milliseconds: 600)); // Smooth UX delay
+    if (!mounted) return;
 
+    if (success) {
+      setState(() { _submitting = false; _showSuccess = true; });
+      _successCtrl.forward();
+
+      // Redirect to LoginScreen after brief success display
+      await Future.delayed(const Duration(milliseconds: 1600));
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 420),
+          pageBuilder: (_, __, ___) => const LoginScreen(),
+          transitionsBuilder: (_, anim, __, child) => FadeTransition(
+            opacity: anim, child: child),
+        ),
+        (route) => false,
+      );
+    } else {
+      setState(() => _submitting = false);
+      _triggerShake();
+      _snack('Failed to reset password. Try again.', isError: true);
+    }
+  }
   void _triggerShake() {
     _shakeCtrl.reset();
     _shakeCtrl.forward();
@@ -354,17 +361,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
               children: [
             _buildHeader(),
             const SizedBox(height: 28),
-
-            // ── Current password ───────────────────────────
-            FpGlassField(
-              controller: _currentPassCtrl,
-              label: 'Current Password',
-              hint: 'Enter current password',
-              icon: Icons.lock_outline_rounded,
-              isPassword: true,
-              exampleHint: 'e.g. John@2018',
-            ),
-            const SizedBox(height: 16),
 
             // ── New password ───────────────────────────────
             FpGlassField(

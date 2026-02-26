@@ -39,6 +39,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'change_password_screen.dart';
 
@@ -164,29 +165,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
     if (id.isEmpty || email.isEmpty) {
       _triggerShake();
-      _snack('Please fill in both Unique ID and Email.',
-          isError: true);
+      _snack('Please fill in both Unique ID and Email.', isError: true);
       return;
     }
     if (!RegExp(r'^[\w.+\-]+@[\w\-]+\.\w{2,}$').hasMatch(email)) {
       _triggerShake();
-      _snack('Please enter a valid email address.',
-          isError: true);
+      _snack('Please enter a valid email address.', isError: true);
       return;
     }
 
     setState(() => _sending = true);
-    // TODO: Replace with actual API call:
-    // await ApiService.sendForgotPasswordOtp(id, email);
-    await Future.delayed(const Duration(milliseconds: 1300));
+    
+    // REAL API CALL
+    final success = await ApiService.requestPasswordReset(id);
+    
     if (!mounted) return;
 
-    setState(() { _sending = false; _otpSent = true; });
-    _otpRevealCtrl.forward();
-    _snack('OTP sent to $email');
+    if (success) {
+      setState(() { _sending = false; _otpSent = true; });
+      _otpRevealCtrl.forward();
+      _snack('OTP sent to $email');
 
-    await Future.delayed(const Duration(milliseconds: 560));
-    if (mounted) _otpFocus[0].requestFocus();
+      await Future.delayed(const Duration(milliseconds: 560));
+      if (mounted) _otpFocus[0].requestFocus();
+    } else {
+      setState(() => _sending = false);
+      _triggerShake();
+      _snack('Failed to send OTP. Check your ID.', isError: true);
+    }
   }
 
   Future<void> _handleVerify() async {
@@ -198,27 +204,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     }
 
     setState(() => _verifying = true);
-    // TODO: Replace with actual API call:
-    // await ApiService.verifyForgotOtp(otp);
-    await Future.delayed(const Duration(milliseconds: 1100));
+    final id = _uniqueIdCtrl.text.trim();
+    
+    // REAL API CALL
+    final success = await ApiService.verifyOtp(id, otp);
+    
     if (!mounted) return;
     setState(() => _verifying = false);
 
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 420),
-        pageBuilder: (_, __, ___) =>
-            ChangePasswordScreen(uniqueId: _uniqueIdCtrl.text.trim()),
-        transitionsBuilder: (_, anim, __, child) => SlideTransition(
-          position: Tween<Offset>(
-                  begin: const Offset(1.0, 0), end: Offset.zero)
-              .animate(CurvedAnimation(
-                  parent: anim, curve: Curves.easeOutCubic)),
-          child: FadeTransition(opacity: anim, child: child),
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 420),
+          pageBuilder: (_, __, ___) =>
+              ChangePasswordScreen(uniqueId: id, otp: otp), // Pass OTP to next screen!
+          transitionsBuilder: (_, anim, __, child) => SlideTransition(
+            position: Tween<Offset>(
+                    begin: const Offset(1.0, 0), end: Offset.zero)
+                .animate(CurvedAnimation(
+                    parent: anim, curve: Curves.easeOutCubic)),
+            child: FadeTransition(opacity: anim, child: child),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      _triggerShake();
+      _snack('Invalid or expired OTP.', isError: true);
+    }
   }
 
   void _triggerShake() {
