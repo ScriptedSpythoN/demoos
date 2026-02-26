@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/dashboard_top_bar.dart';
 import 'medical_detail_screen.dart';
+import 'reviewed_medical_screen.dart';
 import 'login_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────
@@ -118,6 +119,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
     with SingleTickerProviderStateMixin {
   List<MedicalEntry> pendingRequests = [];
   bool isLoading = true;
+  int reviewedCount = 0;
   late AnimationController _staggerCtrl;
 
   @override
@@ -139,11 +141,13 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
   Future<void> _loadData() async {
     setState(() => isLoading = true);
     try {
-      final requests =
-          await ApiService.fetchPendingMedical(widget.departmentId);
+      final requests = await ApiService.fetchPendingMedical(widget.departmentId);
+      final reviewedData = await ApiService.fetchReviewedMedical(widget.departmentId); // Fetch the reviewed list
+      
       if (!mounted) return;
       setState(() {
         pendingRequests = requests;
+        reviewedCount = reviewedData.length; // Set the dynamic count
         isLoading = false;
       });
       _staggerCtrl.reset();
@@ -155,8 +159,7 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         content: Text('Error: $e'),
         backgroundColor: AppTheme.accentPink.withOpacity(0.90),
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ));
     }
   }
@@ -213,31 +216,45 @@ class _HoDHomeTabState extends State<_HoDHomeTab>
         _statCard('${isLoading ? '—' : flagged}', 'AI Flagged',
             Icons.smart_toy_rounded, AppTheme.accentPink),
         const SizedBox(width: 10),
-        _statCard('0', 'Reviewed',
-            Icons.check_circle_outline_rounded, AppTheme.accentTeal),
+        _statCard(
+          '${isLoading ? '—' : reviewedCount}', // Now dynamic!
+          'Reviewed',
+          Icons.check_circle_outline_rounded, 
+          AppTheme.accentTeal,
+          onTap: () {
+            // Smoothly slide to the new reviewed leaves screen
+            Navigator.push(
+              context,
+              AppTheme.slideRoute(ReviewedMedicalScreen(departmentId: widget.departmentId)),
+            );
+          },
+        ),
       ],
     );
   }
 
   Widget _statCard(
-      String value, String label, IconData icon, Color color) {
+      String value, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return Expanded(
-      child: GlassCard(
-        padding: const EdgeInsets.all(14),
-        borderColor: color.withOpacity(0.20),
-        color: const Color(0xFFFFFFFF).withOpacity(0.65),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 8),
-          Text(value,
-              style: AppTheme.mono(
-                  fontSize: 22, color: color, fontWeight: FontWeight.w800)),
-          Text(label,
-              style: AppTheme.dmSans(
-                  fontSize: 11,
-                  color: AppTheme.textMuted,
-                  fontWeight: FontWeight.w500)),
-        ]),
+      child: GestureDetector(
+        onTap: onTap,
+        child: GlassCard(
+          padding: const EdgeInsets.all(14),
+          borderColor: color.withOpacity(0.20),
+          color: const Color(0xFFFFFFFF).withOpacity(0.65),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 8),
+            Text(value,
+                style: AppTheme.mono(
+                    fontSize: 22, color: color, fontWeight: FontWeight.w800)),
+            Text(label,
+                style: AppTheme.dmSans(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w500)),
+          ]),
+        ),
       ),
     );
   }
@@ -860,11 +877,39 @@ class _HoDAnnouncementsTabState extends State<_HoDAnnouncementsTab> {
 // ─────────────────────────────────────────────────────────────────
 //  TAB 3 — Profile  (unchanged)
 // ─────────────────────────────────────────────────────────────────
-class _HoDProfileTab extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────
+//  TAB 3 — Profile  (DYNAMICALLY WIRED)
+// ─────────────────────────────────────────────────────────────────
+class _HoDProfileTab extends StatefulWidget {
   final String departmentId;
   final VoidCallback onLogout;
-  const _HoDProfileTab(
-      {required this.departmentId, required this.onLogout});
+  const _HoDProfileTab({required this.departmentId, required this.onLogout});
+
+  @override
+  State<_HoDProfileTab> createState() => _HoDProfileTabState();
+}
+
+class _HoDProfileTabState extends State<_HoDProfileTab> {
+  int _studentCount = 0;
+  int _facultyCount = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final stats = await ApiService.fetchDepartmentStats();
+    if (mounted) {
+      setState(() {
+        _studentCount = stats['students'] ?? 0;
+        _facultyCount = stats['faculty'] ?? 0;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -902,7 +947,7 @@ class _HoDProfileTab extends StatelessWidget {
                 style: AppTheme.sora(
                     fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(departmentId,
+            Text(widget.departmentId,
                 style: AppTheme.dmSans(
                     fontSize: 14, color: AppTheme.textSecondary)),
             const SizedBox(height: 12),
@@ -913,18 +958,33 @@ class _HoDProfileTab extends StatelessWidget {
         GlassCard(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
-              _row(Icons.school_rounded, 'Department', departmentId,
+              _row(Icons.school_rounded, 'Department', widget.departmentId,
                   AppTheme.accentViolet),
-              _row(Icons.people_rounded, 'Total Students',
-                  '173 Students', AppTheme.accentViolet),
-              _row(Icons.person_rounded, 'Faculty Members',
-                  '8 Faculty', AppTheme.accentViolet),
+              
+              // Animated transition between loading and showing data
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _isLoading 
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: CircularProgressIndicator(color: AppTheme.accentViolet),
+                    )
+                  : Column(
+                      key: const ValueKey('stats'),
+                      children: [
+                        _row(Icons.people_rounded, 'Total Students',
+                            '$_studentCount Students', AppTheme.accentViolet),
+                        _row(Icons.person_rounded, 'Faculty Members',
+                            '$_facultyCount Faculty', AppTheme.accentViolet),
+                      ],
+                    ),
+              )
             ])),
         const SizedBox(height: 12),
         GlowButton(
             label: 'Sign Out',
             accent: AppTheme.accentPink,
-            onPressed: onLogout,
+            onPressed: widget.onLogout,
             icon: const Icon(Icons.logout_rounded,
                 color: Colors.white, size: 18)),
       ]),

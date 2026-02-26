@@ -12,7 +12,10 @@ from attendance.models import AttendanceSession, AttendanceRecord, AttendanceAud
 from medical.models import MedicalRequest, MedicalProcessingJob
 from students.models import Student
 from subjects.models import Subject
-
+from announcements.models import (        # ← ADD THIS
+    AnnounceGroup, AnnounceMember, GroupTag,
+    Announcement, PollOption, PollVote, Reaction
+)
 # --- Import Routers ---
 from auth.router import router as auth_router
 from attendance.router import router as attendance_router
@@ -20,7 +23,7 @@ from medical.router import router as medical_router
 from students.router import router as student_router
 from subjects.router import router as subject_router
 from evaluation.router import router as eval_router
-
+from announcements.router import router as announce_router
 app = FastAPI(title="EduFlow Merged API")
 
 # --- Middleware ---
@@ -43,7 +46,7 @@ app.include_router(medical_router, prefix="/api/medical")
 app.include_router(student_router, prefix="/api/students")
 app.include_router(subject_router, prefix="/api/subjects")
 app.include_router(eval_router, prefix="/api/evaluation")
-
+app.include_router(announce_router, prefix="/api/announce")
 @app.on_event("startup")
 def on_startup():
     # This creates the tables in the database
