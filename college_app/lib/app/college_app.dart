@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import '../screens/login_screen.dart';
+import '../screens/authentication/login_screen.dart';
 
 class CollegeApp extends StatelessWidget {
   const CollegeApp({super.key});

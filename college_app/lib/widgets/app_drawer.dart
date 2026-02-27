@@ -10,13 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
-import '../screens/about_us_screen.dart';
-import '../screens/department_screen.dart';
-import '../screens/faculty_profile_screen.dart';
-import '../screens/hod_profile_screen.dart';
-import '../screens/settings_screen.dart';
-import '../screens/simple_screen.dart';
-import '../screens/student_profile_screen.dart';
+import '../screens/appdrawer/about_us_screen.dart';
+import '../screens/appdrawer/department_screen.dart';
+import '../screens/profiles/faculty_profile_screen.dart';
+import '../screens/profiles/hod_profile_screen.dart';
+import '../screens/appdrawer/settings_screen.dart';
+import '../screens/appdrawer/simple_screen.dart';
+import '../screens/profiles/student_profile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final String userName;

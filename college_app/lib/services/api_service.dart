@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart';
-import '../models/attendance_entry.dart';
-import '../models/medical_entry.dart';
+import '../models/attendance_models.dart';
+import '../models/medical_models.dart';
 
 class ApiService {
   static const _storage = FlutterSecureStorage();
@@ -18,17 +18,13 @@ class ApiService {
   // TOKEN & HEADER HELPERS
   // ─────────────────────────────────────────────────────────────────
 
-  /// Retrieve token from in-memory cache or secure storage.
-  /// ALWAYS call this before any authenticated request.
   static Future<String?> getToken() async {
     if (_token != null) return _token;
     _token = await _storage.read(key: 'auth_token');
     return _token;
   }
 
-  /// Async-safe authenticated headers. Use for all requests.
   static Future<Map<String, String>> _authHeaders({bool json = false}) async {
-    // Always ensure token is loaded from storage if not in memory
     final token = await getToken();
     return {
       if (json) 'Content-Type': 'application/json',
@@ -36,7 +32,6 @@ class ApiService {
     };
   }
 
-  /// Synchronous headers — only safe after login (token guaranteed in memory).
   static Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
@@ -195,17 +190,12 @@ class ApiService {
     }
   }
 
-  static Future<bool> resetPassword(
-      String username, String otp, String newPassword) async {
+  static Future<bool> resetPassword(String username, String otp, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/auth/reset-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username,
-          'otp': otp,
-          'new_password': newPassword,
-        }),
+        body: jsonEncode({'username': username, 'otp': otp, 'new_password': newPassword}),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -213,18 +203,13 @@ class ApiService {
       return false;
     }
   }
-  // ─────────────────────────────────────────────────────────────────
-  // SECURE CHANGE PASSWORD (Logged-In User)
-  // ─────────────────────────────────────────────────────────────────
+
   static Future<bool> changePassword(String currentPassword, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/auth/change-password'),
-        headers: await _authHeaders(json: true), // Securely attaches the JWT
-        body: jsonEncode({
-          'current_password': currentPassword,
-          'new_password': newPassword,
-        }),
+        headers: await _authHeaders(json: true), 
+        body: jsonEncode({'current_password': currentPassword, 'new_password': newPassword}),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -232,6 +217,7 @@ class ApiService {
       return false;
     }
   }
+
   // ─────────────────────────────────────────────────────────────────
   // ATTENDANCE & SCHEDULE METHODS
   // ─────────────────────────────────────────────────────────────────
@@ -240,8 +226,7 @@ class ApiService {
     if (currentUserId == null) return [];
     try {
       final response = await http.get(
-        Uri.parse(
-            '${AppConfig.baseUrl}/api/attendance/teacher/schedule/$currentUserId'),
+        Uri.parse('${AppConfig.baseUrl}/api/attendance/teacher/schedule/$currentUserId'),
         headers: await _authHeaders(),
       );
       if (response.statusCode == 200) {
@@ -253,8 +238,7 @@ class ApiService {
     }
   }
 
-  static Future<List<AttendanceEntry>> fetchRollList(
-      String classId, String subjectId) async {
+  static Future<List<AttendanceEntry>> fetchRollList(String classId, String subjectId) async {
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/attendance/roll-list'),
       headers: await _authHeaders(json: true),
@@ -267,8 +251,7 @@ class ApiService {
     throw Exception('Failed to fetch rolls');
   }
 
-  static Future<void> submitAttendance(
-      String subjectId, DateTime date, List<AttendanceEntry> entries) async {
+  static Future<void> submitAttendance(String subjectId, DateTime date, List<AttendanceEntry> entries) async {
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/attendance/submit'),
       headers: await _authHeaders(json: true),
@@ -285,23 +268,19 @@ class ApiService {
   // STUDENT STATS & DASHBOARD
   // ─────────────────────────────────────────────────────────────────
 
-  static Future<Map<String, dynamic>> fetchStudentStats(
-      String studentId) async {
+  static Future<Map<String, dynamic>> fetchStudentStats(String studentId) async {
     final response = await http.get(
-      Uri.parse(
-          '${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
+      Uri.parse('${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
       headers: await _authHeaders(),
     );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Failed to load stats');
   }
 
-  static Future<Map<String, dynamic>> fetchStudentDashboard(
-      String studentId) async {
+  static Future<Map<String, dynamic>> fetchStudentDashboard(String studentId) async {
     try {
       final response = await http.get(
-        Uri.parse(
-            '${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
+        Uri.parse('${AppConfig.baseUrl}/api/attendance/student/stats/$studentId'),
         headers: await _authHeaders(),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
@@ -336,19 +315,15 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> fetchDepartmentAnalytics(
-      String departmentId) async {
+  static Future<List<dynamic>> fetchDepartmentAnalytics(String departmentId) async {
     try {
       final response = await http.get(
-        Uri.parse(
-            '${AppConfig.baseUrl}/api/students/department/$departmentId/analytics'),
+        Uri.parse('${AppConfig.baseUrl}/api/students/department/$departmentId/analytics'),
         headers: await _authHeaders(),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
-      print('Analytics Fetch Failed: ${response.statusCode}');
       return [];
     } catch (e) {
-      print('Error fetching analytics: $e');
       return [];
     }
   }
@@ -365,8 +340,7 @@ class ApiService {
     required String reason,
     required File pdfFile,
   }) async {
-    var request = http.MultipartRequest(
-        'POST', Uri.parse('${AppConfig.baseUrl}/api/medical/submit'));
+    var request = http.MultipartRequest('POST', Uri.parse('${AppConfig.baseUrl}/api/medical/submit'));
     final token = await getToken();
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
@@ -377,11 +351,7 @@ class ApiService {
       'to_date': toDate.toIso8601String().split('T').first,
       'reason': reason,
     });
-    request.files.add(await http.MultipartFile.fromPath(
-      'file',
-      pdfFile.path,
-      contentType: MediaType('application', 'pdf'),
-    ));
+    request.files.add(await http.MultipartFile.fromPath('file', pdfFile.path, contentType: MediaType('application', 'pdf')));
 
     var response = await http.Response.fromStream(await request.send());
     if (response.statusCode == 200) {
@@ -390,68 +360,45 @@ class ApiService {
     throw Exception('Medical submit failed');
   }
 
-  static Future<List<MedicalEntry>> fetchPendingMedical(
-      String departmentId) async {
+  static Future<List<MedicalEntry>> fetchPendingMedical(String departmentId) async {
     final response = await http.get(
-      Uri.parse(
-          '${AppConfig.baseUrl}/api/medical/hod/pending?department_id=$departmentId'),
+      Uri.parse('${AppConfig.baseUrl}/api/medical/hod/pending?department_id=$departmentId'),
       headers: await _authHeaders(),
     );
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-      return data
-          .map((r) => MedicalEntry(
-                requestId: r['request_id'],
-                studentRollNo: r['student_roll_no'],
-                fromDate: DateTime.parse(r['from_date']),
-                toDate: DateTime.parse(r['to_date']),
-                status: r['status'],
-                hodRemark: r['hod_remark'],
-                reason: r['reason'] ?? 'No reason provided',
-                documentPath: r['document_path'] ?? '',
-                ocrText: r['ocr_text'],
-                ocrStatus: r['ocr_status'],
-              ))
-          .toList();
+      return data.map((r) => MedicalEntry(
+                requestId: r['request_id'], studentRollNo: r['student_roll_no'],
+                fromDate: DateTime.parse(r['from_date']), toDate: DateTime.parse(r['to_date']),
+                status: r['status'], hodRemark: r['hod_remark'], reason: r['reason'] ?? 'No reason provided',
+                documentPath: r['document_path'] ?? '', ocrText: r['ocr_text'], ocrStatus: r['ocr_status'],
+              )).toList();
     }
     throw Exception('Fetch failed');
   }
 
-  static Future<List<MedicalEntry>> fetchReviewedMedical(
-      String departmentId) async {
+  static Future<List<MedicalEntry>> fetchReviewedMedical(String departmentId) async {
     final response = await http.get(
-      Uri.parse(
-          '${AppConfig.baseUrl}/api/medical/hod/reviewed?department_id=$departmentId'),
+      Uri.parse('${AppConfig.baseUrl}/api/medical/hod/reviewed?department_id=$departmentId'),
       headers: await _authHeaders(),
     );
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-      return data
-          .map((r) => MedicalEntry(
-                requestId: r['request_id'],
-                studentRollNo: r['student_roll_no'],
-                fromDate: DateTime.parse(r['from_date']),
-                toDate: DateTime.parse(r['to_date']),
-                status: r['status'],
-                hodRemark: r['hod_remark'],
-                reason: r['reason'] ?? 'No reason provided',
+      return data.map((r) => MedicalEntry(
+                requestId: r['request_id'], studentRollNo: r['student_roll_no'],
+                fromDate: DateTime.parse(r['from_date']), toDate: DateTime.parse(r['to_date']),
+                status: r['status'], hodRemark: r['hod_remark'], reason: r['reason'] ?? 'No reason provided',
                 documentPath: r['document_path'] ?? '',
-              ))
-          .toList();
+              )).toList();
     }
     throw Exception('Failed to fetch reviewed medical requests');
   }
 
-  static Future<void> reviewMedical(
-      String requestId, String action, String? remark) async {
+  static Future<void> reviewMedical(String requestId, String action, String? remark) async {
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/medical/hod/review'),
       headers: await _authHeaders(json: true),
-      body: jsonEncode({
-        'request_id': requestId,
-        'action': action,
-        'remark': remark ?? '',
-      }),
+      body: jsonEncode({'request_id': requestId, 'action': action, 'remark': remark ?? ''}),
     );
     if (response.statusCode != 200) throw Exception('Review failed');
   }
@@ -461,37 +408,25 @@ class ApiService {
   // ─────────────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> fetchMyAnnouncementGroups() async {
-    // Ensure token is loaded from storage before fetching
     await getToken();
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/announce/groups/my'),
-        headers: await _authHeaders(),
-      );
+      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/my'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
-      // Surface auth errors clearly instead of silently returning []
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        throw Exception('Not authenticated. Please log in again.');
-      }
+      if (response.statusCode == 401 || response.statusCode == 403) throw Exception('Not authenticated. Please log in again.');
       return [];
     } catch (e) {
       rethrow;
     }
   }
 
-  static Future<Map<String, dynamic>> createAnnouncementGroup(
-      String name) async {
-    // Ensure token is loaded from storage before request
+  static Future<Map<String, dynamic>> createAnnouncementGroup(String name) async {
     await getToken();
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/announce/groups/create'),
       headers: await _authHeaders(json: true),
       body: jsonEncode({"name": name}),
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return jsonDecode(response.body);
-    }
-    // Try to parse backend error detail, fall back to status code message
+    if (response.statusCode == 200 || response.statusCode == 201) return jsonDecode(response.body);
     try {
       final body = jsonDecode(response.body);
       throw Exception(body['detail'] ?? 'Creation failed (${response.statusCode})');
@@ -501,20 +436,14 @@ class ApiService {
     }
   }
 
-  /// Send the raw invite code WITH prefix (std@... or ad@...) directly to backend.
-  /// Backend handles prefix parsing and role assignment.
-  static Future<Map<String, dynamic>> joinAnnouncementGroup(
-      String code) async {
-    // Ensure token is loaded from storage before request
+  static Future<Map<String, dynamic>> joinAnnouncementGroup(String code) async {
     await getToken();
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/announce/groups/join'),
       headers: await _authHeaders(json: true),
       body: jsonEncode({"invite_link": code.trim()}),
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return Map<String, dynamic>.from(jsonDecode(response.body));
-    }
+    if (response.statusCode == 200 || response.statusCode == 201) return Map<String, dynamic>.from(jsonDecode(response.body));
     try {
       final body = jsonDecode(response.body);
       throw Exception(body['detail'] ?? 'Join failed (${response.statusCode})');
@@ -526,40 +455,26 @@ class ApiService {
 
   static Future<List<dynamic>> fetchAnnouncements(int groupId) async {
     await getToken();
-    final response = await http.get(
-      Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/messages'),
-      headers: await _authHeaders(),
-    );
+    final response = await http.get(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/messages'), headers: await _authHeaders());
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<void> postAnnouncement({
-    required int groupId,
-    required String type,
-    String? content,
-    required List<String> tags,
-    List<String>? pollOptions,
-    File? file,
+    required int groupId, required String type, String? content,
+    required List<String> tags, List<String>? pollOptions, File? file,
   }) async {
     final token = await getToken();
-    final uri =
-        Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/announce');
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/announce');
 
     var request = http.MultipartRequest('POST', uri);
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     request.fields['message_type'] = type;
     request.fields['tags'] = jsonEncode(tags);
 
-    if (content != null && content.isNotEmpty) {
-      request.fields['content'] = content;
-    }
-    if (pollOptions != null && pollOptions.isNotEmpty) {
-      request.fields['poll_options'] = jsonEncode(pollOptions);
-    }
-    if (file != null) {
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
-    }
+    if (content != null && content.isNotEmpty) request.fields['content'] = content;
+    if (pollOptions != null && pollOptions.isNotEmpty) request.fields['poll_options'] = jsonEncode(pollOptions);
+    if (file != null) request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
     final response = await http.Response.fromStream(await request.send());
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -573,18 +488,12 @@ class ApiService {
     }
   }
 
-  static Future<void> deleteAnnouncement(
-      int groupId, int announcementId) async {
+  static Future<void> deleteAnnouncement(int groupId, int announcementId) async {
     await getToken();
-    final response = await http.delete(
-      Uri.parse(
-          '${AppConfig.baseUrl}/api/announce/groups/$groupId/announce/$announcementId'),
-      headers: await _authHeaders(),
-    );
+    final response = await http.delete(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/announce/$announcementId'), headers: await _authHeaders());
     if (response.statusCode != 200) throw Exception('Delete failed');
   }
 
-  /// Toggle reaction — sending the same emoji again removes it.
   static Future<void> reactToAnnouncement(int announceId, String emoji) async {
     await getToken();
     final response = await http.post(
@@ -595,53 +504,94 @@ class ApiService {
     if (response.statusCode != 200) throw Exception('React failed');
   }
 
-  /// Vote on a poll option — sending the same option_id toggles vote off.
   static Future<void> votePoll(int announcementId, int optionId) async {
     await getToken();
     final response = await http.post(
       Uri.parse('${AppConfig.baseUrl}/api/announce/poll/vote'),
       headers: await _authHeaders(json: true),
-      body: jsonEncode({
-        "announcement_id": announcementId,
-        "option_id": optionId,
-      }),
+      body: jsonEncode({"announcement_id": announcementId, "option_id": optionId}),
     );
     if (response.statusCode != 200) throw Exception('Vote failed');
   }
 
   static Future<List<dynamic>> fetchGroupTags(int groupId) async {
     await getToken();
-    final response = await http.get(
-      Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/tags'),
-      headers: await _authHeaders(),
-    );
+    final response = await http.get(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/tags'), headers: await _authHeaders());
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<List<dynamic>> fetchGroupMembers(int groupId) async {
     await getToken();
-    final response = await http.get(
-      Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/members'),
-      headers: await _authHeaders(),
-    );
+    final response = await http.get(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/members'), headers: await _authHeaders());
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<void> leaveGroup(int groupId) async {
     await getToken();
-    final response = await http.delete(
-      Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/leave'),
-      headers: await _authHeaders(),
-    );
+    final response = await http.delete(Uri.parse('${AppConfig.baseUrl}/api/announce/groups/$groupId/leave'), headers: await _authHeaders());
     if (response.statusCode != 200) throw Exception('Leave failed');
   }
-}
 
-// ─────────────────────────────────────────────────────────────────
-// MODELS
-// ─────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────
+  // CLASSROOM METHODS (NEW)
+  // ─────────────────────────────────────────────────────────────────
+
+  static Future<void> uploadClassroomFile({
+    required int classId,
+    required String title,
+    required File file,
+    required String type, // 'notes' or 'assignments'
+    DateTime? deadline,
+  }) async {
+    final token = await getToken();
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/classroom/$classId/$type');
+
+    var request = http.MultipartRequest('POST', uri);
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+
+    request.fields['title'] = title;
+    if (type == 'assignments' && deadline != null) {
+      request.fields['deadline'] = deadline.toUtc().toIso8601String();
+    }
+    
+    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      try {
+        final body = jsonDecode(response.body);
+        throw Exception(body['detail'] ?? 'Failed to upload $type');
+      } catch (e) {
+        throw Exception('Failed to upload $type (${response.statusCode})');
+      }
+    }
+  }
+
+  static Future<void> submitAssignment({
+    required int assignId,
+    required File file,
+  }) async {
+    final token = await getToken();
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/classroom/assignments/$assignId/submit');
+
+    var request = http.MultipartRequest('POST', uri);
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+
+    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      try {
+        final body = jsonDecode(response.body);
+        throw Exception(body['detail'] ?? 'Failed to submit assignment');
+      } catch (e) {
+        throw Exception('Failed to submit assignment (${response.statusCode})');
+      }
+    }
+  }
+}
 
 class RegistrationResult {
   final bool success;
